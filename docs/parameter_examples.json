@@ -1,0 +1,165 @@
+[
+  {
+    "name": "temperature",
+    "api_name": "temperature",
+    "stage": "completion",
+    "enabled": true,
+    "type": "number",
+    "initial": 0.6,
+    "minimum": 0,
+    "maximum": 2,
+    "adjustments": {
+      "narrow_sampling": {
+        "op": "add",
+        "value": -0.1
+      }
+    }
+  },
+  {
+    "name": "top_k",
+    "api_name": "top_k",
+    "stage": "completion",
+    "enabled": true,
+    "type": "integer",
+    "initial": 20,
+    "minimum": 1,
+    "maximum": 100,
+    "adjustments": {
+      "narrow_sampling": {
+        "op": "add",
+        "value": -5
+      }
+    }
+  },
+  {
+    "name": "ignore_eos",
+    "api_name": "ignore_eos",
+    "stage": "completion",
+    "enabled": true,
+    "type": "boolean",
+    "initial": false,
+    "adjustments": {
+      "reduce_repetition": {
+        "op": "set",
+        "value": false
+      }
+    }
+  },
+  {
+    "name": "stop",
+    "api_name": "stop",
+    "stage": "completion",
+    "enabled": true,
+    "type": "string",
+    "initial": "END",
+    "description": "Illustrative stop marker only; not used by the active parameters.json file.",
+    "adjustments": {
+      "narrow_sampling": {
+        "op": "set",
+        "value": "DONE"
+      }
+    }
+  },
+  {
+    "name": "bad_words",
+    "api_name": "bad_words",
+    "stage": "completion",
+    "enabled": true,
+    "type": "array",
+    "initial": [
+      "placeholder"
+    ],
+    "items": {
+      "type": "string"
+    },
+    "adjustments": {
+      "reduce_repetition": {
+        "op": "append",
+        "value": [
+          "repeated phrase"
+        ]
+      },
+      "narrow_sampling": {
+        "op": "remove",
+        "value": [
+          "placeholder"
+        ]
+      }
+    }
+  },
+  {
+    "name": "logit_bias",
+    "api_name": "logit_bias",
+    "stage": "completion",
+    "enabled": true,
+    "type": "object",
+    "initial": {
+      "42": -1
+    },
+    "additional_properties": {
+      "type": "number",
+      "minimum": -100,
+      "maximum": 100
+    },
+    "adjustments": {
+      "narrow_sampling": {
+        "op": "update",
+        "value": {
+          "42": -2,
+          "43": 1
+        }
+      }
+    }
+  },
+  {
+    "name": "prompt_logprobs",
+    "api_name": "prompt_logprobs",
+    "stage": "completion",
+    "enabled": true,
+    "type": "null",
+    "initial": null,
+    "adjustments": {}
+  },
+  {
+    "name": "logprobs",
+    "api_name": "logprobs",
+    "stage": "completion",
+    "enabled": true,
+    "type": [
+      "integer",
+      "null"
+    ],
+    "initial": null,
+    "minimum": 0,
+    "maximum": 20,
+    "adjustments": {
+      "narrow_sampling": {
+        "op": "set",
+        "value": 5
+      }
+    }
+  },
+  {
+    "name": "top_p",
+    "api_name": "top_p",
+    "stage": "completion",
+    "enabled": true,
+    "type": "number",
+    "initial": 0.95,
+    "description": "Illustrative fixed rule; the active top_p has a narrow_sampling adjustment.",
+    "minimum": 0.01,
+    "maximum": 1,
+    "adjustments": {}
+  },
+  {
+    "name": "min_p",
+    "api_name": "min_p",
+    "stage": "completion",
+    "enabled": false,
+    "type": "number",
+    "initial": 0,
+    "minimum": 0,
+    "maximum": 1,
+    "adjustments": {}
+  }
+]

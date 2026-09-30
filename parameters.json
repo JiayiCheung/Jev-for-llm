@@ -1,0 +1,281 @@
+# Native vLLM SamplingParams selection. All comments and descriptions are English.
+# Bounds are experiment limits; native validation also runs before every segment.
+# An empty adjustments object keeps the parameter fixed.
+[
+  {
+    "name": "temperature",
+    "api_name": "temperature",
+    "stage": "completion",
+    "enabled": true,
+    "type": "number",
+    "initial": 0.6,
+    "description": "Sampling temperature; zero selects greedy decoding.",
+    "minimum": 0,
+    "maximum": 2,
+    "adjustments": {
+      "narrow_sampling": {
+        "op": "add",
+        "value": -0.1
+      }
+    }
+  },
+  {
+    "name": "top_p",
+    "api_name": "top_p",
+    "stage": "completion",
+    "enabled": true,
+    "type": "number",
+    "initial": 0.95,
+    "description": "Cumulative probability mass retained for sampling.",
+    "minimum": 0.01,
+    "maximum": 1,
+    "adjustments": {
+      "narrow_sampling": {
+        "op": "add",
+        "value": -0.05
+      }
+    }
+  },
+  {
+    "name": "top_k",
+    "api_name": "top_k",
+    "stage": "completion",
+    "enabled": true,
+    "type": "integer",
+    "initial": 20,
+    "description": "Number of retained tokens; 0 or -1 disables filtering.",
+    "minimum": -1,
+    "maximum": 1000000,
+    "adjustments": {}
+  },
+  {
+    "name": "repetition_penalty",
+    "api_name": "repetition_penalty",
+    "stage": "completion",
+    "enabled": true,
+    "type": "number",
+    "initial": 1.0,
+    "description": "Penalty for tokens appearing in prompt or generated text.",
+    "minimum": 1,
+    "maximum": 1.5,
+    "adjustments": {
+      "reduce_repetition": {
+        "op": "add",
+        "value": 0.05
+      }
+    }
+  },
+  {
+    "name": "min_p",
+    "api_name": "min_p",
+    "stage": "completion",
+    "enabled": true,
+    "type": "number",
+    "initial": 0.0,
+    "description": "Minimum probability relative to the most likely token.",
+    "minimum": 0,
+    "maximum": 1,
+    "adjustments": {}
+  },
+  {
+    "name": "presence_penalty",
+    "api_name": "presence_penalty",
+    "stage": "completion",
+    "enabled": true,
+    "type": "number",
+    "initial": 0.0,
+    "description": "Penalty for whether a token appeared in generated output.",
+    "minimum": -2,
+    "maximum": 2,
+    "adjustments": {}
+  },
+  {
+    "name": "frequency_penalty",
+    "api_name": "frequency_penalty",
+    "stage": "completion",
+    "enabled": true,
+    "type": "number",
+    "initial": 0.0,
+    "description": "Penalty scaled by generated token frequency.",
+    "minimum": -2,
+    "maximum": 2,
+    "adjustments": {}
+  },
+  {
+    "name": "stop",
+    "api_name": "stop",
+    "stage": "completion",
+    "enabled": true,
+    "type": [
+      "string",
+      "array",
+      "null"
+    ],
+    "initial": null,
+    "description": "Stop strings; matching is scoped to each generated segment.",
+    "items": {
+      "type": "string"
+    },
+    "adjustments": {}
+  },
+  {
+    "name": "stop_token_ids",
+    "api_name": "stop_token_ids",
+    "stage": "completion",
+    "enabled": true,
+    "type": [
+      "array",
+      "null"
+    ],
+    "initial": null,
+    "description": "Token IDs that stop the current generation.",
+    "items": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "adjustments": {}
+  },
+  {
+    "name": "ignore_eos",
+    "api_name": "ignore_eos",
+    "stage": "completion",
+    "enabled": true,
+    "type": "boolean",
+    "initial": false,
+    "description": "Ignore model EOS termination.",
+    "adjustments": {}
+  },
+  {
+    "name": "min_tokens",
+    "api_name": "min_tokens",
+    "stage": "completion",
+    "enabled": true,
+    "type": "integer",
+    "initial": 0,
+    "description": "Minimum new tokens per segment; must not exceed the remaining segment budget.",
+    "minimum": 0,
+    "maximum": 1024,
+    "adjustments": {}
+  },
+  {
+    "name": "logprobs",
+    "api_name": "logprobs",
+    "stage": "completion",
+    "enabled": true,
+    "type": [
+      "integer",
+      "null"
+    ],
+    "initial": null,
+    "description": "Top output token log probabilities; null disables collection.",
+    "minimum": 0,
+    "maximum": 20,
+    "adjustments": {}
+  },
+  {
+    "name": "prompt_logprobs",
+    "api_name": "prompt_logprobs",
+    "stage": "completion",
+    "enabled": true,
+    "type": [
+      "integer",
+      "null"
+    ],
+    "initial": null,
+    "description": "Prompt token log probabilities; collection repeats for each segment.",
+    "minimum": 0,
+    "maximum": 20,
+    "adjustments": {}
+  },
+  {
+    "name": "detokenize",
+    "api_name": "detokenize",
+    "stage": "completion",
+    "enabled": true,
+    "type": "boolean",
+    "initial": true,
+    "description": "Generate display text; controller still decodes raw token IDs.",
+    "adjustments": {}
+  },
+  {
+    "name": "skip_special_tokens",
+    "api_name": "skip_special_tokens",
+    "stage": "completion",
+    "enabled": true,
+    "type": "boolean",
+    "initial": true,
+    "description": "Omit special tokens from native display text only.",
+    "adjustments": {}
+  },
+  {
+    "name": "spaces_between_special_tokens",
+    "api_name": "spaces_between_special_tokens",
+    "stage": "completion",
+    "enabled": true,
+    "type": "boolean",
+    "initial": true,
+    "description": "Insert spaces between displayed special tokens.",
+    "adjustments": {}
+  },
+  {
+    "name": "include_stop_str_in_output",
+    "api_name": "include_stop_str_in_output",
+    "stage": "completion",
+    "enabled": true,
+    "type": "boolean",
+    "initial": false,
+    "description": "Keep matched stop strings in native display text.",
+    "adjustments": {}
+  },
+  {
+    "name": "bad_words",
+    "api_name": "bad_words",
+    "stage": "completion",
+    "enabled": true,
+    "type": [
+      "array",
+      "null"
+    ],
+    "initial": null,
+    "description": "Disallow listed words during generation.",
+    "items": {
+      "type": "string"
+    },
+    "adjustments": {}
+  },
+  {
+    "name": "allowed_token_ids",
+    "api_name": "allowed_token_ids",
+    "stage": "completion",
+    "enabled": true,
+    "type": [
+      "array",
+      "null"
+    ],
+    "initial": null,
+    "description": "Restrict generation to a nonempty token allowlist; null disables.",
+    "items": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "adjustments": {}
+  },
+  {
+    "name": "logit_bias",
+    "api_name": "logit_bias",
+    "stage": "completion",
+    "enabled": true,
+    "type": [
+      "object",
+      "null"
+    ],
+    "initial": null,
+    "description": "Token ID strings mapped to logit offsets; converted to integers by vLLM.",
+    "adjustments": {},
+    "additional_properties": {
+      "type": "number",
+      "minimum": -100,
+      "maximum": 100
+    }
+  }
+]
