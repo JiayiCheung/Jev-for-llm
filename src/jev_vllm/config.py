@@ -35,14 +35,14 @@ def validate(c):
         )
     ):
         raise ValueError(
-            "Use policy.stopping and policy.rollback.score_drop (0-4 composite points)"
+            "Use policy.stopping and policy.rollback.score_drop (normalized 0-1 units)"
         )
 
     if e["mode"] not in ("adaptive", "fixed"):
         raise ValueError("Unknown experiment mode")
 
     for name in ("chunk_tokens", "total_tokens", "max_rounds"):
-        numeric(g[name], 1, 1000000, name, True)
+        numeric(g[name], 1, 10000000, name, True)
 
     numeric(e["max_jev_calls"], 1, 1000000, "max_jev_calls", True)
 
@@ -55,12 +55,10 @@ def validate(c):
     validate_parameters(c["parameters"])
     request_parameters(s, c["parameters"])
 
-    if "error_max" in p:
-        raise ValueError(
-            "Replace policy.error_max with correctness_max and relevance_max in raw score units"
-        )
+    if any(name in p for name in ("error_max", "correctness_max", "relevance_max", "repetition_min")):
+        raise ValueError("Score trigger thresholds are obsolete; typed Jev Choices now choose changes")
 
-    numeric(p["rollback"]["score_drop"], 0, 4, "rollback.score_drop")
+    numeric(p["rollback"]["score_drop"], 0, 1, "rollback.score_drop")
 
     numeric(p["cooldown_rounds"], 0, 10000, "cooldown_rounds", True)
 
@@ -114,19 +112,9 @@ def validate(c):
         ):
             raise ValueError("Invalid Score rubric")
 
-    score_thresholds = {
-        "correctness_max": "correctness",
-        "relevance_max": "relevance",
-        "repetition_min": "repetition",
-    }
-    for name, dimension in score_thresholds.items():
-        maximum = len(c["jev"]["questions"][dimension]["criteria"]) - 1
-        numeric(p[name], 0, maximum, f"policy.{name} (raw score)")
-
     for dimension in ("completeness", "correctness", "relevance"):
-        maximum = len(c["jev"]["questions"][dimension]["criteria"]) - 1
         name = f"{dimension}_min"
-        numeric(p["stopping"][name], 0, maximum, f"policy.stopping.{name} (raw score)")
+        numeric(p["stopping"][name], 0, 1, f"policy.stopping.{name} (normalized score)")
 
     return c
 

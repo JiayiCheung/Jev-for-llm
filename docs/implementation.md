@@ -1,52 +1,24 @@
-# Current implementation: Qwen3 + Jev + native vLLM
+# Current Qwen3 / Jev / native vLLM implementation
 
-[简体中文详细版](implementation.zh-CN.md) · [English README](../README.md) · [parameter examples](parameter_examples.md)
+[中文](implementation.zh-CN.md) · [README](../README.md) · [parameter examples](parameter_examples.md)
 
-This describes the code and configuration in `Code/` as of 2026-10-01. The older [Qwen3/Jev parameter-stage audit](../../Qwen3_Jev_参数调控阶段清单.html) studied Transformers 4.57.6; its per-token processors and example controller pseudocode are **not** this runner's vLLM implementation. The active native parameter list is `parameters.json`.
+The active controller uses the Python `vllm.LLM` object. It keeps one engine loaded and calls `LLM.generate` once per segment. `engine` and `runtime` settings apply at startup; only selected `SamplingParams` values can change on the next segment. The model prompt, seed, `max_tokens`, and single output candidate remain runner-owned.
 
-## Ownership and when a change takes effect
+## Call sequence
 
-| Layer | Source | Effective time |
-|---|---|---|
-| Model and engine | `config.json` → `engine`, `runtime`; `backend.py` | Engine creation; changing these requires a new process/engine. |
-| Prompt | `generation.enable_thinking`; Qwen chat template in `backend.py` | Before tokenizing each task. It is not a per-token thinking-budget control. |
-| Generation schedule | `generation.chunk_tokens`, `total_tokens`, `max_rounds`, `engine.max_model_len`, `experiment.max_jev_calls`; `runner.py` | Before every segment; the smallest remaining budget determines `max_tokens`. |
-| Sampling and output options | The 20 enabled `stage: completion` entries in `parameters.json`; `parameters.py` → native `vllm.SamplingParams` | Before each `LLM.generate` call. A decision cannot alter tokens within the running call. |
-| Evaluation | `jev_questions.json`; `adapters.py` and `clients.py` | After a nonempty segment; one HTTPS Jev request carries four Score questions. |
-| Decision | `config.json` → `policy`; `policy.py` | After Jev returns; proposed values can be sent only in the **next** segment. |
+1. `config.load_config` loads `config.json`, `parameters.json`, and `jev_questions.json`; `parameters.validate_parameters` checks types, bounds, and typed control metadata.
+2. `backend.PythonBackend` tokenizes the user task with the Qwen chat template. `runner.execute` appends generated token IDs to the prompt before each new segment. It bounds `max_tokens` by the chunk, total generation budget, and context window.
+3. `jev_requests.score_request` constructs JSON with four Score questions and `state={task, generated, recent, step}`. `adapters.parse_scores` validates and normalizes the returned score and probability distributions. Scores range from 0 to 1 after normalization; high repetition is worse.
+4. `policy.Controller.decide` applies fixed-mode hold, pending rollback, optional score stopping, and cooldown. If another segment can run, adaptive mode calls `jev_requests.direction_request`: one type-specific Choice per currently adjustable field. Its state includes the new Score values and current parameter values, but no reference answer or remaining-token budget.
+5. `jev_requests.value_request` creates exact legal values for any chosen operation that needs them. Numeric directions produce up to three values at one, two, and three steps inside the configured control window. Boolean flips and other single-target operations need no extra API call. `parse_choices` checks the returned option and full probability distribution; `Controller.commit` stages accepted values for the next segment.
+6. The next round's `applied_parameters` and `generation_request` show what actually reached vLLM. `decision_will_execute=false` means the loop stopped before a proposal could run. Each round's cumulative `answer_snapshot` is also written as a labeled section in `answer.txt`.
 
-`run.py` dispatches to `cli.py`. `PythonBackend` lazily creates one `vllm.LLM` in the current interpreter and reuses it. There is no local OpenAI-compatible server, backend selector or configured Python executable. Only Jev uses HTTP(S).
+The maximum is one Jev request per fixed segment and three per adaptive segment. `max_jev_calls` applies to the total Score and Choice calls in each task/seed/mode run. Each request and filtered response is saved in `result.json`; saved configuration redacts `jev.api_key`. Choice and Score confidence fields are not used or stored.
 
-## One task/seed/mode run
+## Typed actions and limits
 
-1. `runner.py` applies Qwen's chat template to the task prompt. A separate run starts from the initial values in `parameters.json`.
-2. Before each call, the runner builds `prompt_token_ids = original_prompt_ids + all_generated_ids`, a per-segment `seed = initial_seed + step`, and `max_tokens = min(chunk_tokens, remaining_total_tokens, remaining_context_tokens)`. The runner requires exactly one candidate. `seed`, `max_tokens`, the prompt and candidate count are runner-owned, so the parameter file cannot override them.
-3. The backend builds a fresh `SamplingParams` with the current values and calls `LLM.generate`. It returns native output text, token IDs, finish/stop reasons and any enabled log-probability records. The runner independently decodes accumulated token IDs with `skip_special_tokens=False` to obtain the raw text sent to Jev and saved in `answer.txt`.
-4. Jev receives `model`, the four Score rubrics and `state = {task, generated, recent, step}`. Neither the task's reference answer nor a generated list of choices is sent. `parse_scores` checks each score's range, probability-level keys and probability sum. The controller uses the **numeric Score fields**; probabilities are validated and recorded, but are not themselves decision inputs.
-5. The controller decides `hold`, `adjust`, `rollback` or `stop`. The runner checks model stop and all budgets before applying proposed parameters. Inspect the **next** round's `applied_parameters` / `generation_request` to confirm execution; a decision row by itself is not proof of a subsequent call.
+`jev_requests.py` derives operations from the declared type, not from hard-coded parameter names. Every listed parameter is included in native requests; removing its entry omits it, and the legacy per-entry `enabled` flag is rejected. Numerics offer keep/increase/decrease and use `control.window` and `control.denominator`. Nullable numerics use `control.enable_candidates` while `null`, then the same bounded step rule when active, with an additional disable-to-`null` action. Booleans offer keep or the opposite state. Enums use declared `choices`. Nullable strings, lists, and mappings expose set/add/remove/clear only when applicable. String and list additions require `control.candidates`; mapping additions require validated `control.entries`. Empty candidate sets make those fields hold-only. `control.adaptive=false` keeps an observation field fixed even while it remains in each native request.
 
-Each segment is a new generation call with prior output converted into prompt tokens. This can reset per-call state: presence/frequency penalties concern the current call's newly generated tokens, while repetition penalty can see tokens now in the prompt. Stop-string matching across segment boundaries is not guaranteed. Prefix caching does not make the run equivalent to one uninterrupted generation.
+The shipped 20 entries are a representative subset of the much larger [vLLM checklist taxonomy](vllm_catalog_taxonomy.md); checklist presence does not prove runtime support. At their initial values, 17 entries offer a direction Choice. Three token-ID fields (`stop_token_ids`, `allowed_token_ids`, `logit_bias`) remain hold-only pending reviewed candidates. Some of the 17 are observation or output-format switches and are not answer-quality controls. This implementation supports the current `stage: completion` route, and `doctor` constructs the installed `SamplingParams` without loading the model. The output-kind strings are converted to native `RequestOutputKind` members before construction.
 
-## Current decision rule
-
-The rubrics are correctness, relevance, repetition and completeness, each currently scored from 0 to 4. Higher repetition is worse. Trigger and stopping thresholds compare **raw** Score values. For the current `config.json`:
-
-| Condition, checked in order after pending feedback | Result |
-|---|---|
-| `fixed` mode | Hold the initial parameters; Jev is still called after each segment. |
-| An adjustment is pending and the 0–4 composite utility fell by **more than** `rollback.score_drop = 0.6` | Restore the previous parameter values and enter cooldown. Generated text remains. |
-| `stopping.enabled = true` and completeness ≥ 4, correctness ≥ 3, relevance ≥ 3 | Propose score-based stop. Currently `enabled = false`; `compare` also disables it in both groups. |
-| Within `cooldown_rounds = 1` after a change | Hold. |
-| Correctness ≤ 2 **or** relevance ≤ 2 | `narrow_sampling`: temperature −0.1 and top_p −0.05, clamped to their configured bounds. |
-| Otherwise repetition ≥ 2.5 | `reduce_repetition`: repetition_penalty +0.05, clamped to its bound. |
-| Otherwise, or if an action leaves all values unchanged | Hold. |
-
-Pending feedback is evaluated before a new trigger. A retained change may then be held by cooldown. The current utility is `4 × weighted_mean(correctness/max, relevance/max, completeness/max, 1 − repetition/max)`; with the five-level rubrics and current weights this equals `0.45·correctness + 0.30·relevance + 0.15·completeness + 0.10·(4 − repetition)`. It measures the controller's chosen heuristic, not answer accuracy. Rollback is based on association across adjacent segments, not a causal test. Old run records used a different utility scale and should not be compared numerically with new ones.
-
-Only three of the 20 enabled native fields currently have nonempty automatic rules: `temperature`, `top_p` and `repetition_penalty`. Other fields are passed with their initial values. Adding a new trigger name or control stage needs code changes; adding a field to JSON alone does not create a new adapter.
-
-## Validation and records
-
-`check` validates configuration and task loading without importing vLLM. `doctor` imports the installed vLLM and constructs `SamplingParams` from initial values without loading the model. `smoke` loads the model and generates up to eight tokens without Jev. `run` uses the configured mode; `compare` runs fixed then adaptive for every task/seed, with score stopping disabled for both. Both modes call Jev. `summarize` reads existing records and does not grade answers.
-
-Each run writes `outputs/<timestamp>_<mode>/result.json` and `answer.txt`, saving incrementally. The saved config redacts `jev.api_key`; the record includes the request, response, timing, Score fields, decision and `decision_will_execute`. `status: completed` means the loop ended without an exception, **not** that the mathematical answer was correct. The historical 2026-09-30 outputs were produced under an older policy, so they do not verify today's thresholds or adaptive adjustments. There is no automatic reference-answer grader or no-Jev continuous baseline.
+Rollback compares a weighted normalized utility across adjacent segments and restores the previous parameter values after a configured drop. It does not remove already generated tokens or prove that a particular parameter caused the change. Multiple changes in one round also complicate attribution. `fixed` still calls Jev for Score records; `compare` pairs fixed and adaptive by task and seed with score stopping disabled. Independent answer grading is not implemented, so `status: completed` does not mean the answer is correct.

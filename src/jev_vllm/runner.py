@@ -5,7 +5,10 @@ from datetime import datetime
 from pathlib import Path
 import platform
 import importlib.metadata
-from .adapters import build_evaluation, parse_scores, score_response
+from .adapters import parse_scores, score_response, choice_response
+from .jev_requests import (
+    score_request, direction_request, parse_choices, value_request, chosen_values,
+)
 from .policy import Controller
 from .parameters import request_parameters, check_backend_parameters
 
@@ -117,7 +120,8 @@ def execute(c, task, seed, vllm, jev, record, save):
             generated=text, generated_token_count=len(ids), generated_token_ids=ids
         )
         row["token_end"] = len(ids)
-        evaluation = build_evaluation(task["prompt"], text, recent, step, c["jev"])
+        row["answer_snapshot"] = text
+        evaluation = score_request(task["prompt"], text, recent, step, c["jev"])
         row["evaluation_request"] = evaluation
         record["jev_calls"] += 1
         save()
@@ -130,7 +134,6 @@ def execute(c, task, seed, vllm, jev, record, save):
         scores = parse_scores(response, c["jev"]["questions"])
         row["scores"] = scores
         decision = ctl.decide(scores, params, step)
-        row["decision"] = decision
         # A proposal is not an executed parameter change. Next row records actual request parameters.
         row["decision_will_execute"] = False
         reason = None
@@ -147,6 +150,47 @@ def execute(c, task, seed, vllm, jev, record, save):
             reason = "round_budget"
         elif record["jev_calls"] >= c["experiment"]["max_jev_calls"]:
             reason = "jev_call_budget"
+
+        if reason is None and decision["reason"] == "choice_ready":
+            request_choice, offered = direction_request(
+                task["prompt"], text, recent, step, scores, params,
+                c["parameters"], c["jev"],
+            )
+            if request_choice is not None:
+                if record["jev_calls"] >= c["experiment"]["max_jev_calls"]:
+                    reason = "jev_call_budget"
+                else:
+                    row["direction_request"] = request_choice
+                    record["jev_calls"] += 1
+                    save()
+                    choice_start = time.perf_counter()
+                    raw_choice = jev.call(c["jev"]["endpoint"], request_choice)
+                    row["direction_response"] = choice_response(raw_choice)
+                    row["direction_seconds"] = time.perf_counter() - choice_start
+                    save()
+                    selected = parse_choices(raw_choice, request_choice["questions"])
+                    exact_request, exact, immediate = value_request(
+                        task["prompt"], text, recent, step, scores, params,
+                        selected, offered, c["jev"],
+                    )
+                    changes = immediate
+                    if exact_request is not None:
+                        if record["jev_calls"] >= c["experiment"]["max_jev_calls"]:
+                            reason = "jev_call_budget"
+                        else:
+                            row["value_request"] = exact_request
+                            record["jev_calls"] += 1
+                            save()
+                            choice_start = time.perf_counter()
+                            raw_value = jev.call(c["jev"]["endpoint"], exact_request)
+                            row["value_response"] = choice_response(raw_value)
+                            row["value_seconds"] = time.perf_counter() - choice_start
+                            save()
+                            changes.update(chosen_values(raw_value, exact_request, exact))
+                    if reason is None:
+                        decision = ctl.commit(decision, params, changes, step)
+
+        row["decision"] = decision
 
         print(
             f"[{task['id']} seed={seed} {c['experiment']['mode']}] Chunk {step+1}: {decision['action']} / {decision['reason']}",
@@ -200,8 +244,14 @@ def run_experiment(c, task, seed, vllm, jev):
             json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8"
         )
         tmp.replace(directory / "result.json")
+        answers = [
+            f"=== Round {row['step'] + 1} | cumulative generated tokens: {row['token_end']} ===\n"
+            f"{row['answer_snapshot']}"
+            for row in record["rounds"]
+            if "answer_snapshot" in row
+        ]
         (directory / "answer.txt").write_text(
-            record.get("generated", ""), encoding="utf-8"
+            "\n\n".join(answers) + ("\n" if answers else ""), encoding="utf-8"
         )
 
     try:

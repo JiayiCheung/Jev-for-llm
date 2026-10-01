@@ -22,6 +22,11 @@ class PythonBackend:
         if missing:
             raise ValueError(f"SamplingParams fields not exposed: {sorted(missing)}")
         values = dict(values)
+        if isinstance(values.get("logit_bias"), dict):
+            values["logit_bias"] = {int(key): bias for key, bias in values["logit_bias"].items()}
+        if isinstance(values.get("output_kind"), str):
+            from vllm.sampling_params import RequestOutputKind
+            values["output_kind"] = RequestOutputKind[values["output_kind"]]
         values.setdefault("max_tokens", self.config["generation"]["chunk_tokens"])
         return self.sampling_class(**values)
 

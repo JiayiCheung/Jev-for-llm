@@ -8,20 +8,31 @@ from .clients import JsonClient
 from .backend import PythonBackend
 from .parameters import check_backend_parameters, request_parameters
 from .runner import load_tasks, run_experiment
+from .jev_requests import score_request, direction_request, value_request
 
 
 def main():
     parser = argparse.ArgumentParser(description="Jev / vLLM research controller")
     parser.add_argument(
-        "command", choices=["check", "doctor", "smoke", "run", "compare", "summarize"]
+        "command", choices=["check", "preview", "doctor", "smoke", "run", "compare", "summarize"]
     )
     parser.add_argument(
         "--config", default=str(Path(__file__).resolve().parents[2] / "config.json")
+    )
+    parser.add_argument(
+        "--start-task", help="For run/compare, begin at this dataset task ID (inclusive)."
     )
     args = parser.parse_args()
 
     c = load_config(args.config)
     tasks = load_tasks(c["paths"]["dataset"])
+    if args.start_task:
+        if args.command not in ("run", "compare"):
+            parser.error("--start-task is available only for run or compare")
+        start = next((i for i, task in enumerate(tasks) if task["id"] == args.start_task), None)
+        if start is None:
+            parser.error(f"Unknown task ID: {args.start_task}")
+        tasks = tasks[start:]
 
     if args.command == "check":
         print(
@@ -30,6 +41,28 @@ def main():
             f"mode={c['experiment']['mode']}"
         )
 
+        return 0
+
+    if args.command == "preview":
+        task = tasks[0]["prompt"]
+        generated = "Illustrative partial answer for request-shape inspection."
+        scores = {name: {"normalized": 0.5} for name in c["jev"]["questions"]}
+        directions, offered = direction_request(
+            task, generated, generated, 0, scores, c["sampling"], c["parameters"], c["jev"]
+        )
+        selected = {qid: "keep" for qid in offered}
+        numeric = next((qid for qid in offered if qid == "direction_temperature"), None)
+        if numeric:
+            selected[numeric] = "increase"
+        values, _, _ = value_request(
+            task, generated, generated, 0, scores, c["sampling"], selected, offered, c["jev"]
+        )
+        print(json.dumps({
+            "note": "Offline illustrative JSON only; no model or Jev call was made.",
+            "score_request": score_request(task, generated, generated, 0, c["jev"]),
+            "direction_request": directions,
+            "value_request": values,
+        }, ensure_ascii=False, indent=2))
         return 0
 
     if args.command == "summarize":
@@ -86,16 +119,17 @@ def main():
         if args.command == "compare"
         else [c["experiment"]["mode"]]
     )
-    cap = (
-        len(tasks)
-        * len(c["experiment"]["seeds"])
-        * len(modes)
-        * min(c["generation"]["max_rounds"], c["experiment"]["max_jev_calls"])
+    cap = len(tasks) * len(c["experiment"]["seeds"]) * sum(
+        min(
+            c["experiment"]["max_jev_calls"],
+            c["generation"]["max_rounds"] * (1 if mode == "fixed" else 3),
+        )
+        for mode in modes
     )
     print(
         f"Tasks and generated text will be sent to Jev. "
-        f"At most {cap} evaluation requests, "
-        f'with {len(c["jev"]["questions"])} questions per request.',
+        f"At most {cap} Jev requests across all runs; "
+        "fixed uses one Score request per segment, adaptive can add direction and value Choice requests.",
         flush=True,
     )
 

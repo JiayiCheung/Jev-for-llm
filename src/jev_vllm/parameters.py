@@ -1,7 +1,8 @@
-"""User-selected completion parameters and declarative adjustment rules."""
+"""User-selected completion parameters and typed Choice control metadata."""
 
 from copy import deepcopy
-from .value_schema import validate_value, validate_schema, validate_action
+from .value_schema import kinds, validate_value, validate_schema
+from .jev_requests import parameter_kind
 
 
 # These fields belong to the segmented runner, not the parameter controller.
@@ -31,10 +32,8 @@ def validate_parameters(specs):
         if not isinstance(name, str) or not name or name in names:
             raise ValueError("Parameter names must be unique nonempty strings")
         names.add(name)
-        if type(spec.get("enabled")) is not bool:
-            raise ValueError(f"{name}: enabled must be boolean")
-        if not spec["enabled"]:
-            continue
+        if "enabled" in spec:
+            raise ValueError(f"{name}: remove enabled; list membership controls inclusion")
         if spec.get("stage") != "completion":
             raise ValueError(
                 f"{name}: this stage needs an adapter; only completion is implemented"
@@ -46,21 +45,78 @@ def validate_parameters(specs):
         targets.add(target)
         validate_schema(spec)
         validate_value(spec["initial"], spec)
-        if not isinstance(spec.get("adjustments", {}), dict):
-            raise ValueError(f"{name}: adjustments must be an object")
-        for trigger, rule in spec.get("adjustments", {}).items():
-            if trigger not in ("narrow_sampling", "reduce_repetition"):
-                raise ValueError(f"{name}: unknown adjustment trigger {trigger}")
-            validate_action(rule, spec)
+        if "adjustments" in spec:
+            raise ValueError(f"{name}: replace fixed adjustments with typed control metadata")
+        control = spec.get("control")
+        if not isinstance(control, dict) or type(control.get("adaptive", True)) is not bool:
+            raise ValueError(f"{name}: control must be an object with optional boolean adaptive")
+        kind = parameter_kind(spec)
+        if kind == "unsupported" and control.get("adaptive", True):
+            raise ValueError(f"{name}: unsupported adaptive parameter type")
+        if kind in ("numeric", "nullable_numeric") and control.get("adaptive", True):
+            window = control.get("window")
+            denominator = control.get("denominator")
+            if (
+                not isinstance(window, list)
+                or len(window) != 2
+                or any(type(x) not in (int, float) for x in window)
+                or not spec["minimum"] <= window[0] < window[1] <= spec["maximum"]
+                or type(denominator) is not int
+                or denominator < 1
+            ):
+                raise ValueError(f"{name}: invalid numeric control window or denominator")
+            if "integer" in (spec["type"] if isinstance(spec["type"], list) else [spec["type"]]):
+                if round((window[1] - window[0]) / denominator) < 1:
+                    raise ValueError(f"{name}: integer step must be at least one")
+            if kind == "numeric" and "disabled_value" in control:
+                if "enable_value" not in control:
+                    raise ValueError(f"{name}: disabled sentinel needs enable_value")
+                validate_value(control["disabled_value"], spec)
+                validate_value(control["enable_value"], spec)
+                if not window[0] <= control["enable_value"] <= window[1]:
+                    raise ValueError(f"{name}: enable_value outside control window")
+        if kind == "nullable_numeric" and control.get("adaptive", True):
+            if "candidates" in control:
+                raise ValueError(f"{name}: use enable_candidates for nullable numeric controls")
+            candidates = control.get("enable_candidates")
+            if not isinstance(candidates, list) or not candidates:
+                raise ValueError(f"{name}: enable_candidates must be a nonempty list")
+            for item in candidates:
+                validate_value(item, {**spec, "type": "integer" if "integer" in kinds(spec) else "number"})
+                if not control["window"][0] <= item <= control["window"][1]:
+                    raise ValueError(f"{name}: enable candidate outside control window")
+        if kind in ("string", "collection"):
+            candidates = control.get("candidates", [])
+            if not isinstance(candidates, list):
+                raise ValueError(f"{name}: candidates must be a list")
+            if kind == "string":
+                for item in candidates:
+                    validate_value(item, {"type": "string"})
+            elif kind == "collection":
+                for item in candidates:
+                    validate_value(item, spec["items"])
+        if kind == "mapping":
+            entries = control.get("entries", [])
+            if not isinstance(entries, list):
+                raise ValueError(f"{name}: entries must be a list")
+            for item in entries:
+                if (
+                    not isinstance(item, dict)
+                    or set(item) != {"token_id", "value"}
+                    or type(item["token_id"]) is not int
+                    or item["token_id"] < 0
+                ):
+                    raise ValueError(f"{name}: invalid reviewed token entry")
+                validate_value(item["value"], spec["additional_properties"])
 
 
 def initial_parameters(specs):
-    return {s["name"]: deepcopy(s["initial"]) for s in specs if s["enabled"]}
+    return {s["name"]: deepcopy(s["initial"]) for s in specs}
 
 
 def request_parameters(values, specs):
     """Translate experiment names to native SamplingParams keyword arguments."""
-    active = {s["name"]: s for s in specs if s["enabled"]}
+    active = {s["name"]: s for s in specs}
     if set(values) != set(active):
         raise ValueError("Runtime parameter values do not match the selected list")
     result = {}

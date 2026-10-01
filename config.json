@@ -67,17 +67,17 @@
     "enable_thinking": true,
 
     # Maximum newly generated tokens per segment before evaluation.
-    "chunk_tokens": 1280,
+    "chunk_tokens": 256,
 
     # Total new-token budget across all segments, including reasoning.
-    "total_tokens": 10240,
+    "total_tokens": 8192,
 
     # Maximum generation/evaluation rounds per experiment.
     "max_rounds": 32
 
   },
 
-  # Selected parameters, initial values, and adjustment rules.
+  # Selected parameters, initial values, and type-specific Choice controls.
   "parameters_file": "parameters.json",
 
   # Experimental mode, random seeds, and evaluator call budget.
@@ -91,48 +91,39 @@
     ],
 
     # Maximum evaluation requests per task, seed, and mode; not a global cap.
-    "max_jev_calls": 8
+    "max_jev_calls": 96
 
   },
 
-  # Heuristic controller settings. Score thresholds use raw rubric scores; utility uses normalized scores.
+  # Controller settings. Stopping and rollback use normalized Score values.
   "policy": {
 
     # Number of subsequent rounds without a new adjustment after a change.
     "cooldown_rounds": 1,
 
-    # Optional early stopping. All three raw-score thresholds must be met.
+    # Optional early stopping. All three normalized-score thresholds must be met.
     "stopping": {
       # compare overrides this switch to false.
       "enabled": false,
 
-      # Required completeness score (0-4 with current rubrics).
-      "completeness_min": 4.0,
+      # Required normalized completeness score (0-1).
+      "completeness_min": 1.0,
 
-      # Required correctness score (0-4 with current rubrics).
-      "correctness_min": 3.0,
+      # Required normalized correctness score (0-1).
+      "correctness_min": 0.75,
 
-      # Required relevance score (0-4 with current rubrics).
-      "relevance_min": 3.0
+      # Required normalized relevance score (0-1).
+      "relevance_min": 0.75
     },
-
-    # Narrow sampling when raw correctness is at or below this score (0-4).
-    "correctness_max": 2.0,
-
-    # Narrow sampling when raw relevance is at or below this score (0-4).
-    "relevance_max": 2.0,
-
-    # Increase repetition penalty when raw repetition reaches this score (0-4).
-    "repetition_min": 2.5,
 
     # Restore previous parameters if the composite quality score decreases.
     "rollback": {
-      # Absolute drop on the 0-4 composite scale; not a percentage.
-      "score_drop": 0.6
+      # Absolute drop on the normalized 0-1 composite scale; not a percentage.
+      "score_drop": 0.15
     },
 
     # Nonnegative importance weights (0-1); at least one must be positive.
-    # Code normalizes the weights and reverses repetition to produce a 0-4 quality score.
+    # Code normalizes the weights and reverses repetition to produce a 0-1 quality score.
     "utility_weights": {
       # Utility weight for correctness. Positive to reward this dimension.
       "correctness": 0.45,

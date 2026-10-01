@@ -1,52 +1,24 @@
 # 当前实现：Qwen3 + Jev + 原生 vLLM
 
-[English](implementation.md) · [中文总览](../README.zh-CN.md) · [参数示例](parameter_examples.zh-CN.md)
+[English](implementation.md) · [中文 README](README.zh-CN.md) · [参数示例](parameter_examples.zh-CN.md)
 
-本文对应 `Code/` 内截至 2026-10-01 的代码和配置。较早的 [Qwen3／Jev 参数调控阶段清单](../../Qwen3_Jev_参数调控阶段清单.html)基于 Transformers 4.57.6；其中的逐 token 处理器、伪代码和测试状态不能直接当作这套 vLLM 程序的实现或验证。当前启用的原生参数以 `parameters.json` 为准。
+程序在 Python 中持有一个 `vllm.LLM` 实例，每段调用一次 `LLM.generate`。`engine` 和 `runtime` 在启动时生效；只有选中的 `SamplingParams` 能在下一段更改。题目提示词、种子、`max_tokens` 和单候选输出由运行器管理。
 
-## 谁控制什么、何时生效
+## 函数调用顺序
 
-| 层次 | 对应文件 | 生效时点 |
-|---|---|---|
-| 模型与引擎 | `config.json` 的 `engine`、`runtime`；`backend.py` | 创建 vLLM 引擎时；修改后要新建进程／引擎。 |
-| 输入提示词 | `generation.enable_thinking`；`backend.py` 的 Qwen 聊天模板 | 每道题分词前；不是逐 token 的思考预算。 |
-| 生成节奏 | `chunk_tokens`、`total_tokens`、`max_rounds`、`max_model_len`、`max_jev_calls`；`runner.py` | 每段生成前；按剩余预算决定 `max_tokens`。 |
-| 采样与输出 | `parameters.json` 中 20 个已启用、`stage: completion` 的字段；`SamplingParams` | 每次 `LLM.generate` 前；不能在正在生成的一段中途改值。 |
-| 评价 | `jev_questions.json`、`adapters.py`、`clients.py` | 每段生成非空结果后；一次 HTTPS 请求内含四道 Score 评分题。 |
-| 决策 | `config.json` 的 `policy`；`policy.py` | 收到 Jev 结果后；提出的新参数最早在**下一段**提交。 |
+1. `config.load_config` 读取 `config.json`、`parameters.json` 和 `jev_questions.json`；`parameters.validate_parameters` 核对类型、边界与 `control` 元数据。
+2. `backend.PythonBackend` 用 Qwen 聊天模板编码题目。每一段前，`runner.execute` 把已生成的 token ID 接回提示词，并按分段、总预算和上下文窗口计算本段 `max_tokens`。
+3. `jev_requests.score_request` 生成四道 Score 的 JSON，`state={task, generated, recent, step}`。`adapters.parse_scores` 检查分数和概率分布并归一化到 0～1；重复性越高越差。
+4. `policy.Controller.decide` 先处理 fixed、上轮回退、可选的评分停止和冷却。若还有下一段，adaptive 调用 `jev_requests.direction_request`，为每个当前可调字段构建符合其类型的 Choice。输入包含本轮 Score 和当前参数，不含标准答案或剩余 token 预算。
+5. 如果所选动作需要具体值，`jev_requests.value_request` 再生成合法候选。数值方向给出 1、2、3 个步长的值；布尔切换等只有一个目标值时不再发第三次请求。`parse_choices` 检查所选选项及完整概率分布；`Controller.commit` 将改动留给下一段。
+6. 下一轮的 `applied_parameters` 和 `generation_request` 才能证明改动真正传入 vLLM。`decision_will_execute=false` 表示实验先结束了。每轮的累计 `answer_snapshot` 也会按轮次写入 `answer.txt`。
 
-`run.py` 把命令交给 `cli.py`。`PythonBackend` 在当前 Python 解释器里按需创建并复用一个 `vllm.LLM`，不需要本地 OpenAI 兼容服务，也没有可选后端或另行指定的 Python 路径。只有 Jev 使用网络请求。
+fixed 每段最多一次 Jev 请求；adaptive 每段最多三次。`max_jev_calls` 统计每个题目／种子／模式下的 Score 与 Choice 总请求数。各阶段的请求和清理后的返回都存入 `result.json`；保存的配置遮蔽 `jev.api_key`。程序不使用或保存 Score/Choice 的 confidence 字段。
 
-## 一次题目／种子／模式的执行过程
+## 按类型给选项
 
-1. 用 Qwen 聊天模板把题目转为 token。每次独立实验都从 `parameters.json` 的 `initial` 重新开始。
-2. 每段请求的输入是**原提示词 token + 已生成的全部 token**；随机种子为初始种子加段号；`max_tokens` 取“每段上限、剩余总预算、剩余上下文容量”三者的最小值。程序要求只返回一个候选。提示词、`seed`、`max_tokens` 和候选数由执行器掌管，不能在参数定义文件里覆盖。
-3. 后端用当前值创建新的原生 `SamplingParams`，调用 `LLM.generate`，取得 token ID、展示文本、结束原因及按需收集的 logprob。执行器另将累计 token ID 以 `skip_special_tokens=False` 解码为原始文本，送给 Jev，并写入 `answer.txt`。因此“展示用选项”和 Jev 看到的原始内容可能不同。
-4. Jev 收到 `model`、四个 Score 量表和 `state = {task, generated, recent, step}`；标准答案不会发送，也不需要模型列出 Choice 候选。`parse_scores` 检查分数区间、概率等级键和概率总和。控制器实际使用的是**数值 Score**；概率会校验、记录，但当前不直接进入决策公式。
-5. 控制器返回 `hold`、`adjust`、`rollback` 或 `stop`。执行器还会检查模型是否已停止以及各项预算；如果本轮已经结束，就不会执行所提议的下一轮参数。确认参数真的提交，须看**下一轮**的 `applied_parameters` 和 `generation_request`。
+`jev_requests.py` 根据声明类型构造动作，不靠参数名称写死。列表中每项都会进入原生请求；删掉条目才会排除，旧版参数级 `enabled` 会被拒绝。数值型给保持／增加／减少，再按 `control.window` 和 `control.denominator` 生成具体值；可空数值为 `null` 时从 `control.enable_candidates` 选择启用起点，已有数值时按相同步长增加／减少，并可关闭回到 `null`。布尔型给保持／切换；枚举在声明的 `choices` 中选。可空字符串、列表、映射只在适用时提供设置、添加、移除、清空。字符串和列表添加需要 `control.candidates`；映射添加需要核实过的 `control.entries`。候选为空时该字段只能保持。`control.adaptive=false` 使观测参数固定，但仍可作为原生参数传入。
 
-每一段都是新的生成调用，上一段的输出转成下一段的提示词。出现／频次惩罚针对当前调用的新生成 token，而重复惩罚还能看到转入提示词的历史 token；停止字符串未必跨段匹配。前缀缓存即使生效，也不能把分段调用等同于一次连续生成。
+当前 20 项是 [vLLM 完整清单分类](vllm_catalog_taxonomy.zh-CN.md)中的代表子集；清单出现不代表运行效果已经证实。按初值有 17 项可生成方向 Choice，只有 `stop_token_ids`、`allowed_token_ids`、`logit_bias` 要等核实过的 token 候选才可调。其中有些属于观测或输出格式开关，不是答案质量旋钮。程序只实现当前的 `stage: completion` 路径。`doctor` 不加载模型，只用已安装的 vLLM 构造 `SamplingParams`。`output_kind` 字符串会先转换为原生 `RequestOutputKind`。
 
-## 当前决策规则
-
-四个维度是正确性、相关性、重复性、完整性，目前每个按 0～4 评分；**重复性越高越差**。触发和提前停止比较的是 Jev **原始分数**。现有 `config.json` 的判断顺序如下：
-
-| 条件 | 结果 |
-|---|---|
-| `fixed` 模式 | 参数维持初值；每段仍调用 Jev。 |
-| 上轮有参数调整，综合分下降**超过** `rollback.score_drop = 0.6` | 恢复调整前的参数，进入冷却；已生成文字不撤销。 |
-| 开启 `stopping.enabled`，且完整性 ≥ 4、正确性 ≥ 3、相关性 ≥ 3 | 提议按评分停止。当前开关为 `false`；`compare` 也会在两组关闭它。 |
-| 改值后尚处于 `cooldown_rounds = 1` 的冷却期 | 保持参数。 |
-| 正确性 ≤ 2 **或**相关性 ≤ 2 | `narrow_sampling`：temperature 减 0.1、top_p 减 0.05，受项目边界限制。 |
-| 否则重复性 ≥ 2.5 | `reduce_repetition`：repetition_penalty 加 0.05，受项目边界限制。 |
-| 不满足触发，或动作做完没有实际改值 | 保持参数。 |
-
-新触发之前先检查上轮调整的反馈；保留该调整之后也可能因冷却而暂不再改。综合分为 `4 × 加权平均(正确性/满分, 相关性/满分, 完整性/满分, 1 − 重复性/满分)`。当前五档量表和权重下，它等于 `0.45×正确性 + 0.30×相关性 + 0.15×完整性 + 0.10×(4−重复性)`，取值 0～4。这只是控制器定义的质量指标，**不是**标准答案正确率；相邻段分数变化也不能证明参数改变造成了变化。旧输出使用不同综合分尺度，不能直接比较。
-
-当前 20 个启用字段中，只有 `temperature`、`top_p`、`repetition_penalty` 有非空自动调整规则。其他字段按初值传入。新增触发名称或调控阶段需要改代码，不能只在 JSON 中增添字段。
-
-## 校验与结果
-
-`check` 检查配置与题目，不加载 vLLM；`doctor` 用当前安装的 vLLM 构造初始 `SamplingParams`，但不加载模型；`smoke` 加载模型，最多生成 8 token，不调用 Jev；`run` 按配置模式执行；`compare` 对每道题和种子先跑 fixed 再跑 adaptive，两组都关闭评分提前停止，**两组仍调用 Jev**；`summarize` 只读既有结果，不判题。
-
-每次实验增量保存 `outputs/<时间戳>_<模式>/result.json` 和 `answer.txt`。保存的配置会遮蔽 `jev.api_key`；记录包括请求、响应、耗时、评分、决策和 `decision_will_execute`。`status: completed` 只表示循环正常结束，不代表题做对。2026-09-30 的旧输出按先前策略产生，不能验证当前阈值或自动调整。程序尚无标准答案自动判分器，也没有“不调用 Jev 的连续生成”基线。
+回退比较相邻片段的加权归一化综合分，下降超过配置值时恢复先前参数。它不删除已生成文字，也不能证明某个参数造成分数变化；同轮改动多项尤其难归因。fixed 仍调用 Jev 保存 Score；compare 按题目和种子配对 fixed/adaptive，并关闭两组的评分提前停止。当前没有独立的标准答案判分器，`status: completed` 不等于答对。

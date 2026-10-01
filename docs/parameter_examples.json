@@ -1,165 +1,22 @@
 [
-  {
-    "name": "temperature",
-    "api_name": "temperature",
-    "stage": "completion",
-    "enabled": true,
-    "type": "number",
-    "initial": 0.6,
-    "minimum": 0,
-    "maximum": 2,
-    "adjustments": {
-      "narrow_sampling": {
-        "op": "add",
-        "value": -0.1
-      }
-    }
-  },
-  {
-    "name": "top_k",
-    "api_name": "top_k",
-    "stage": "completion",
-    "enabled": true,
-    "type": "integer",
-    "initial": 20,
-    "minimum": 1,
-    "maximum": 100,
-    "adjustments": {
-      "narrow_sampling": {
-        "op": "add",
-        "value": -5
-      }
-    }
-  },
-  {
-    "name": "ignore_eos",
-    "api_name": "ignore_eos",
-    "stage": "completion",
-    "enabled": true,
-    "type": "boolean",
-    "initial": false,
-    "adjustments": {
-      "reduce_repetition": {
-        "op": "set",
-        "value": false
-      }
-    }
-  },
-  {
-    "name": "stop",
-    "api_name": "stop",
-    "stage": "completion",
-    "enabled": true,
-    "type": "string",
-    "initial": "END",
-    "description": "Illustrative stop marker only; not used by the active parameters.json file.",
-    "adjustments": {
-      "narrow_sampling": {
-        "op": "set",
-        "value": "DONE"
-      }
-    }
-  },
-  {
-    "name": "bad_words",
-    "api_name": "bad_words",
-    "stage": "completion",
-    "enabled": true,
-    "type": "array",
-    "initial": [
-      "placeholder"
-    ],
-    "items": {
-      "type": "string"
-    },
-    "adjustments": {
-      "reduce_repetition": {
-        "op": "append",
-        "value": [
-          "repeated phrase"
-        ]
-      },
-      "narrow_sampling": {
-        "op": "remove",
-        "value": [
-          "placeholder"
-        ]
-      }
-    }
-  },
-  {
-    "name": "logit_bias",
-    "api_name": "logit_bias",
-    "stage": "completion",
-    "enabled": true,
-    "type": "object",
-    "initial": {
-      "42": -1
-    },
-    "additional_properties": {
-      "type": "number",
-      "minimum": -100,
-      "maximum": 100
-    },
-    "adjustments": {
-      "narrow_sampling": {
-        "op": "update",
-        "value": {
-          "42": -2,
-          "43": 1
-        }
-      }
-    }
-  },
-  {
-    "name": "prompt_logprobs",
-    "api_name": "prompt_logprobs",
-    "stage": "completion",
-    "enabled": true,
-    "type": "null",
-    "initial": null,
-    "adjustments": {}
-  },
-  {
-    "name": "logprobs",
-    "api_name": "logprobs",
-    "stage": "completion",
-    "enabled": true,
-    "type": [
-      "integer",
-      "null"
-    ],
-    "initial": null,
-    "minimum": 0,
-    "maximum": 20,
-    "adjustments": {
-      "narrow_sampling": {
-        "op": "set",
-        "value": 5
-      }
-    }
-  },
-  {
-    "name": "top_p",
-    "api_name": "top_p",
-    "stage": "completion",
-    "enabled": true,
-    "type": "number",
-    "initial": 0.95,
-    "description": "Illustrative fixed rule; the active top_p has a narrow_sampling adjustment.",
-    "minimum": 0.01,
-    "maximum": 1,
-    "adjustments": {}
-  },
-  {
-    "name": "min_p",
-    "api_name": "min_p",
-    "stage": "completion",
-    "enabled": false,
-    "type": "number",
-    "initial": 0,
-    "minimum": 0,
-    "maximum": 1,
-    "adjustments": {}
-  }
+  {"name":"temperature","api_name":"temperature","stage":"completion","type":"number","initial":0.6,"minimum":0,"maximum":2,"description":"Sampling randomness; zero is greedy.","control":{"window":[0,2],"denominator":20}},
+  {"name":"top_p","api_name":"top_p","stage":"completion","type":"number","initial":0.95,"minimum":0.01,"maximum":1,"description":"Cumulative probability mass considered for sampling.","control":{"window":[0.01,1],"denominator":100}},
+  {"name":"top_k","api_name":"top_k","stage":"completion","type":"integer","initial":20,"minimum":-1,"maximum":1000000,"description":"Number of candidate tokens; zero or minus one disables filtering.","control":{"window":[1,101],"denominator":20,"disabled_value":0,"enable_value":20}},
+  {"name":"repetition_penalty","api_name":"repetition_penalty","stage":"completion","type":"number","initial":1.0,"minimum":1,"maximum":1.5,"description":"Penalty for tokens present in the prompt or generated text.","control":{"window":[1,1.5],"denominator":20}},
+  {"name":"frequency_penalty","api_name":"frequency_penalty","stage":"completion","type":"number","initial":0.0,"minimum":-2,"maximum":2,"description":"Penalty scaled by token frequency in generated text.","control":{"window":[-2,2],"denominator":100}},
+  {"name":"presence_penalty","api_name":"presence_penalty","stage":"completion","type":"number","initial":0.0,"minimum":-2,"maximum":2,"description":"Penalty for tokens already present in generated text.","control":{"window":[-2,2],"denominator":100}},
+  {"name":"min_p","api_name":"min_p","stage":"completion","type":"number","initial":0.0,"minimum":0,"maximum":1,"description":"Minimum token probability relative to the most likely token.","control":{"window":[0,1],"denominator":100}},
+  {"name":"ignore_eos","api_name":"ignore_eos","stage":"completion","type":"boolean","initial":false,"description":"Continue sampling after EOS; the experiment token cap still applies.","control":{}},
+  {"name":"stop_token_ids","api_name":"stop_token_ids","stage":"completion","type":["array","null"],"initial":null,"items":{"type":"integer","minimum":0},"description":"Token IDs that stop generation. Add tokenizer-verified candidates before allowing changes.","control":{"candidates":[]}},
+  {"name":"allowed_token_ids","api_name":"allowed_token_ids","stage":"completion","type":["array","null"],"initial":null,"items":{"type":"integer","minimum":0},"description":"Restrict sampling to verified token IDs; an empty allowlist is invalid.","control":{"candidates":[]}},
+  {"name":"logit_bias","api_name":"logit_bias","stage":"completion","type":["object","null"],"initial":null,"additional_properties":{"type":"number","minimum":-100,"maximum":100},"description":"Token ID to logit offset mapping. Entries require tokenizer verification.","control":{"entries":[]}},
+  {"name":"output_kind","api_name":"output_kind","stage":"completion","type":"string","initial":"CUMULATIVE","choices":["CUMULATIVE","FINAL_ONLY"],"description":"Native request-output representation; not an answer-quality control.","control":{}},
+  {"name":"logprobs","api_name":"logprobs","stage":"completion","type":["integer","null"],"initial":null,"minimum":0,"maximum":20,"description":"Observation-only output log probabilities; not a quality control.","control":{"enable_candidates":[0,1,2],"window":[0,20],"denominator":20}},
+  {"name":"prompt_logprobs","api_name":"prompt_logprobs","stage":"completion","type":["integer","null"],"initial":null,"minimum":0,"maximum":20,"description":"Observation-only prompt log probabilities; not a quality control.","control":{"enable_candidates":[0,1,2],"window":[0,20],"denominator":20}},
+  {"name":"min_tokens","api_name":"min_tokens","stage":"completion","type":"integer","initial":0,"minimum":0,"maximum":1,"description":"Minimum generated tokens before stopping, restricted to zero or one so it remains valid for short segments.","control":{"window":[0,1],"denominator":1}},
+  {"name":"detokenize","api_name":"detokenize","stage":"completion","type":"boolean","initial":true,"description":"Return decoded text alongside generated token IDs; output representation only.","control":{}},
+  {"name":"skip_special_tokens","api_name":"skip_special_tokens","stage":"completion","type":"boolean","initial":true,"description":"Omit special tokens when decoding output text; output representation only.","control":{}},
+  {"name":"spaces_between_special_tokens","api_name":"spaces_between_special_tokens","stage":"completion","type":"boolean","initial":true,"description":"Insert spaces between adjacent special tokens in decoded output; output representation only.","control":{}},
+  {"name":"include_stop_str_in_output","api_name":"include_stop_str_in_output","stage":"completion","type":"boolean","initial":false,"description":"Whether decoded output includes the stop string; only relevant when a stop string is configured.","control":{}},
+  {"name":"flat_logprobs","api_name":"flat_logprobs","stage":"completion","type":"boolean","initial":false,"description":"Return log probabilities in a flattened representation; observation only.","control":{}}
 ]

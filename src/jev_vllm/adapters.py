@@ -59,9 +59,15 @@ def score_response(response):
     return result
 
 
-def build_evaluation(task, text, recent, step, jev_config):
-    return {
-        "model": jev_config["model"],
-        "questions": jev_config["questions"],
-        "state": {"task": task, "generated": text, "recent": recent, "step": step},
+def choice_response(response):
+    """Record Choice outputs without the redundant confidence field."""
+    result = {
+        "answers": {
+            name: {key: answer[key] for key in ("type", "choice", "probabilities") if key in answer}
+            for name, answer in response["answers"].items()
+        }
     }
+    for key in ("model", "usage"):
+        if key in response:
+            result[key] = response[key]
+    return result

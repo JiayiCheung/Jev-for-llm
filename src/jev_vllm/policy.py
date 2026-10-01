@@ -1,5 +1,4 @@
 from copy import deepcopy
-from .value_schema import apply_action
 
 
 class Controller:
@@ -19,13 +18,10 @@ class Controller:
         }
 
         s = {k: v["normalized"] for k, v in scores.items()}
-        raw = {k: v["score"] for k, v in scores.items()}
         weights = self.c["utility_weights"]
         favorable = {**s, "repetition": 1 - s["repetition"]}
-        utility = (
-            4
-            * sum(favorable[k] * w for k, w in weights.items())
-            / sum(weights.values())
+        utility = sum(favorable[k] * w for k, w in weights.items()) / sum(
+            weights.values()
         )
         result["utility"] = utility
 
@@ -54,9 +50,9 @@ class Controller:
 
         if (
             self.c["stopping"]["enabled"]
-            and raw["completeness"] >= self.c["stopping"]["completeness_min"]
-            and raw["correctness"] >= self.c["stopping"]["correctness_min"]
-            and raw["relevance"] >= self.c["stopping"]["relevance_min"]
+            and s["completeness"] >= self.c["stopping"]["completeness_min"]
+            and s["correctness"] >= self.c["stopping"]["correctness_min"]
+            and s["relevance"] >= self.c["stopping"]["relevance_min"]
         ):
             result.update(action="stop", stop=True, reason="score_complete")
 
@@ -67,26 +63,19 @@ class Controller:
 
             return result
 
-        if (
-            raw["correctness"] <= self.c["correctness_max"]
-            or raw["relevance"] <= self.c["relevance_max"]
-        ):
-            result["reason"] = "narrow_sampling"
-        elif raw["repetition"] >= self.c["repetition_min"]:
-            result["reason"] = "reduce_repetition"
+        result["reason"] = "choice_ready"
+        return result
 
-        for spec in self.parameters:
-            if not spec["enabled"]:
-                continue
-            rule = spec.get("adjustments", {}).get(result["reason"])
-            if rule is None:
-                continue
-            name = spec["name"]
-            current[name] = apply_action(current[name], rule, spec)
-
-        if current != parameters:
-            result["action"] = "adjust"
-            self.pending = {"before": deepcopy(parameters), "utility": utility}
-            self.last_change = step
-
+    def commit(self, result, before, changes, step):
+        if not changes:
+            result["reason"] = "jev_kept_parameters"
+            return result
+        updated = deepcopy(before)
+        updated.update(deepcopy(changes))
+        if updated == before:
+            result["reason"] = "jev_kept_parameters"
+            return result
+        result.update(action="adjust", reason="jev_typed_choice", parameters=updated)
+        self.pending = {"before": deepcopy(before), "utility": result["utility"]}
+        self.last_change = step
         return result
