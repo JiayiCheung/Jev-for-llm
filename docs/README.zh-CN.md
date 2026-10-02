@@ -133,25 +133,7 @@ Jev-for-llm/
 }
 ```
 
-| 字段 | 含义 |
-|---|---|
-| name | 控制器内部的参数名称 |
-| api_name | 传给原生 SamplingParams 的关键字 |
-| stage | 本项目当前只实现 completion |
-| type | 数值、整数、布尔、字符串、列表、对象、null 或这些类型的联合 |
-| initial | 每个题目/种子/模式实验开始时的数值 |
-| minimum / maximum | 项目设定的边界，不代表 vLLM 全部合法范围 |
-| control | 按类型生成 Jev Choice 的元数据；数值参数用 window/denominator |
-
-读取文件后，`initial_parameters` 从每个条目只取 `name` 和 `initial`，形成一张普通的运行时映射。例如 `temperature`、`ignore_eos`、`logprobs` 三项得到 `{"temperature": 0.6, "ignore_eos": false, "logprobs": null}`；实际映射包含列出的全部 20 项。类型、说明、边界和 `control` 仍保留在参数定义中，供校验及后续生成 Jev Choice 使用，不会嵌套进每个运行时值。这张映射先保存在内存中的 `sampling`，每次独立实验从它复制初值；每轮实际使用的参数另记在 `result.json` 中。
-
-当前解析器要求每项都写 `control`，即使没有额外设置也要写 `"control": {}`。布尔型 `ignore_eos` 和枚举型 `output_kind` 仅凭类型、当前值及声明的 `choices` 就能生成动作；**空对象不表示禁止调整**。如果希望某项仍传给 vLLM、但始终保持初值，写 `"control": {"adaptive": false}`。数值型须提供 `window`、`denominator`；可空数值型还须提供 `enable_candidates`；列表和映射要先提供核实过的 `candidates` 或 `entries`，才能新增内容。
-
-若 Jev 为 temperature 选 `increase`，程序会按窗口跨度除以 20 生成 0.7、0.8、0.9 等合法候选，再请 Jev 选具体值。**运行时调整不会改写 `initial`**；下一次独立实验仍从 0.6 开始。
-
-列表可用 `items` 约束元素；对象可用 `properties`、`required`、`additional_properties` 约束内容。布尔参数只有保持或切换；枚举只能选声明的 `choices`；字符串、列表、映射必须先在 `control.candidates` 或 `control.entries` 中填写核实过的内容，程序才会提供设置、增删等动作。
-
-各类代表参数及候选内容规则见[参数示例教程](parameter_examples.zh-CN.md)。[严格 JSON 示例](parameter_examples.json)是当前选择去除注释后的副本。
+`parameters.json` 定义参数初值和允许的调整方式。Jev 按参数类型选择合法改动，更新后的值从下一段生成开始生效。支持的类型、字段规则与填写示例见[参数示例教程](parameter_examples.zh-CN.md)和[示例 JSON](parameter_examples.json)。
 
 更完整的 vLLM 范围见 [1,181 项清单分类](vllm_catalog_taxonomy.zh-CN.md)及其[逐条 CSV](vllm_catalog_taxonomy.csv)。这份清单区分了当前 Python 控制项与其他接口，并不代表所有项目已经通过运行验证。
 
