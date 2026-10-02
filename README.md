@@ -1,6 +1,6 @@
 # Jev and vLLM Inference Control
 
-**English** | [简体中文](docs/README.zh-CN.md) | [Project page source](docs/index.html)
+**English** | [简体中文](docs/README.zh-CN.md) | [Project Website](https://jiayicheung.github.io/Jev-for-llm/)
 
 Qwen generates text locally through the Python vLLM API. Jev evaluates each segment using four Score rubrics. A configurable controller chooses the next segment's parameters. The model stays loaded throughout one process. Only Jev uses HTTPS; no local API server is required.
 
@@ -97,13 +97,15 @@ Jev-for-llm/
   jev_questions.json     Four evaluator rubrics
   pyproject.toml         Package/build metadata; not a GPU environment lockfile
   data/                  Active tasks and sampling provenance
-  docs/                  Project page, Chinese guide, implementation and migration notes
+  docs/                  Chinese guide, implementation and migration notes
   src/jev_vllm/          Implementation
   outputs/               Generated experiment records
   README.md              English guide
 ```
 
 The development workspace also has sibling `../tests`, `../scripts` and `../data` directories for controller tests, helper scripts/logs and raw downloads. They are outside this repository and are not a prerequisite for normal runs. A standalone clone may not contain them; its active dataset is the repository-local `data/tasks.jsonl`. Native vLLM interface tests are maintained separately.
+
+The static project website is maintained in the separate `gh-pages` branch, with `index.html` at its root.
 
 ## 3. File formats and configuration
 

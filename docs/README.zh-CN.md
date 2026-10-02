@@ -1,6 +1,6 @@
 # Jev 与 vLLM 推理控制
 
-[English](../README.md) | **简体中文** | [项目主页源码](index.html)
+[English](../README.md) | **简体中文** | [项目主页](https://jiayicheung.github.io/Jev-for-llm/)
 
 Qwen 通过 **Python vLLM 接口在本地生成**；Jev 对每段输出做四个维度的 Score 评价；参数决策模块据此决定下一段使用的参数。一个进程内保持模型加载，只有 Jev 调用使用 HTTPS，**不需要启动本地 HTTP 服务**。
 
@@ -97,13 +97,15 @@ Jev-for-llm/
   jev_questions.json     四个评分维度的英文指令与等级标准
   pyproject.toml         Python 包与构建元数据
   data/                  当前运行题目与抽样来源记录
-  docs/                  项目主页、中文说明、实现与迁移说明
+  docs/                  中文说明、实现与迁移说明
   src/jev_vllm/          核心实现
   outputs/               实验输出
   README.md              英文说明
 ```
 
 开发工作区还在仓库外使用 `../tests`、`../scripts`、`../data` 分别保存控制器测试、辅助脚本/日志、原始下载。这些目录不属于仓库，也不是正常运行的前提。单独克隆时可能不存在；实际使用的题目是仓库内 `data/tasks.jsonl`。vLLM 原生接口测试另行维护。
+
+静态项目主页单独保存在 `gh-pages` 分支，入口文件是该分支根目录的 `index.html`。
 
 ## 3. 文件格式与配置
 
