@@ -71,7 +71,7 @@ Edit the existing `paths` object in `config.json` to use your machine. This frag
 }
 ```
 
-Activate your environment before running, or explicitly use its Python executable. Keep the other configuration sections and fill `jev.api_key` directly; no separate credential input is required.
+Activate your environment before running, or explicitly use its Python executable. Set `jev.api_key` in your local configuration or provide `TYPESAFE_API_KEY` in the process environment.
 
 ## 2. Layout and ownership
 
@@ -111,7 +111,7 @@ Within the existing `jev` object, set:
 "api_key": "YOUR_TYPESAFE_API_KEY"
 ```
 
-The client reads this field directly. There is no environment-variable lookup or interactive key prompt. Keep the real key in your local configuration; replace it with a placeholder before publishing that file. Saved experiment configuration redacts `api_key`.
+The client uses `jev.api_key` when set, then falls back to `TYPESAFE_API_KEY`; it does not prompt for a key. Keep credentials out of published files. Saved experiment configuration redacts `api_key`.
 
 The endpoint is `https://api.typesafe.ai/v1/systemone`, with Bearer authentication. See [TypeSafe's API quickstart](https://docs.typesafe.ai/introduction/quickstart). No TypeSafe SDK installation is required: this implementation uses Python's standard-library HTTP client.
 
@@ -160,12 +160,14 @@ Run these commands yourself from the directory containing `run.py`:
 | `python run.py doctor` | Construct native SamplingParams | No | No |
 | `python run.py smoke` | Generate eight tokens for the first task | Yes | No |
 | `python run.py run` | Run the configured fixed/adaptive mode | Yes | Yes |
+| `python run.py run --mode baseline` | Generate with fixed parameters and no Jev requests | Yes | No |
 | `python run.py compare` | Run fixed then adaptive for each task/seed | Yes | Yes |
 | `python run.py summarize` | List saved experiment summaries | No | No |
+| `python run.py dashboard` | Open an interactive visualization of experiment results | No | No |
 
 An alternate configuration is selected with `python run.py run --config "E:\Experiments\config.json"`; copy its referenced files or update their paths too.
 
-For an adaptive experiment set `experiment.mode` to `adaptive`; for a fixed experiment set it to `fixed`. `compare` chooses both automatically and disables score-based early stopping in both. Both groups still call Jev. A continuous, no-Jev baseline is not implemented.
+For an adaptive experiment set `experiment.mode` to `adaptive`; for a fixed experiment set it to `fixed`. `compare` chooses both automatically and disables score-based early stopping in both. Both groups still call Jev. Use `run --mode baseline` for a separate no-Jev reference run; [result analysis](docs/analysis.md) explains how to match it to an adaptive batch.
 
 For each task and seed, fixed mode uses at most one Jev Score request per round; adaptive uses at most three requests (Score, direction Choice, exact-value Choice). Each run is also capped by `max_jev_calls`. With 10 tasks, one seed and eight rounds, fixed ≤80 requests, adaptive ≤240, compare ≤320. Model stopping or choosing keep reduces the actual count.
 
@@ -244,7 +246,7 @@ cd Jev-for-llm
 python run.py run
 ```
 
-For the two-group experiment, replace the last command with `python run.py compare`. No credential setup outside `config.json` is needed. `check` does not authenticate the API key; `doctor` validates parameter construction but does not prove the model or every parameter combination will run.
+For the two-group experiment, replace the last command with `python run.py compare`. `check` does not authenticate the API key; `doctor` validates parameter construction but does not prove the model or every parameter combination will run.
 
 Each task/seed/mode creates `outputs/<timestamp>_<mode>/result.json` and `answer.txt`. `answer.txt` contains a labeled cumulative-answer snapshot after every generated round; the last snapshot is the final full answer. `result.json` also keeps each round's `answer_snapshot`. Inspect `rounds[].scores`, `decision`, `applied_parameters`, `generation_request`, timing and stop reason. A proposed adjustment is only confirmed by the next round's actual request. `decision_will_execute` alone does not prove the next call succeeded.
 

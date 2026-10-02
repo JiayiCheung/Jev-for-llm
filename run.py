@@ -1,4 +1,4 @@
-"""Entry point: python run.py check / doctor / smoke / run / compare / summarize."""
+"""Entry point: python run.py check / doctor / smoke / run / compare / summarize / dashboard."""
 
 import sys
 import multiprocessing

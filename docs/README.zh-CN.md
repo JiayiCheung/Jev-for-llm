@@ -71,7 +71,7 @@ hf download Qwen/Qwen3-0.6B --local-dir models/Qwen3-0.6B
 }
 ```
 
-运行前激活环境，或显式使用对应的 Python 可执行文件。保留配置中的其他对象，并按第 3 节直接填写 `jev.api_key`，不需要额外输入凭据。
+运行前激活环境，或显式使用对应的 Python 可执行文件。保留配置中的其他对象，并填写本地 `jev.api_key`，或在进程环境中设置 `TYPESAFE_API_KEY`。
 
 ## 2. 目录与文件职责
 
@@ -111,7 +111,7 @@ Jev-for-llm/
 "api_key": "YOUR_TYPESAFE_API_KEY"
 ```
 
-程序直接读取 `jev.api_key`，**不需要设置环境变量，也不会要求交互输入密钥**。真实密钥保存在本地配置；发布该文件前将其替换为占位符。保存到实验结果中的配置会遮蔽 `api_key`。
+程序优先读取 `jev.api_key`，为空时读取 `TYPESAFE_API_KEY`，不会交互询问密钥。不要把真实密钥发布到仓库；保存到实验结果中的配置会遮蔽 `api_key`。
 
 接口地址为 `https://api.typesafe.ai/v1/systemone`，使用 Bearer 认证。本实现用 Python 标准库发送请求，不需要另装 TypeSafe SDK。参见 [TypeSafe API quickstart](https://docs.typesafe.ai/introduction/quickstart)。
 
@@ -169,7 +169,9 @@ Jev-for-llm/
 | `python run.py doctor` | 构造原生 SamplingParams 校验 | 否 | 否 |
 | `python run.py smoke` | 第一题实际生成 8 个 token | 是 | 否 |
 | `python run.py run` | 运行配置指定的 fixed 或 adaptive | 是 | 是 |
+| `python run.py run --mode baseline` | 保持初始参数生成，不调用 Jev | 是 | 否 |
 | `python run.py compare` | 每题/种子先 fixed 再 adaptive | 是 | 是 |
+| `python run.py dashboard` | 打开实验结果的交互式可视化仪表盘 | 否 | 否 |
 | `python run.py summarize` | 列出保存的实验摘要 | 否 | 否 |
 
 使用另一份配置：
@@ -178,7 +180,7 @@ Jev-for-llm/
 python run.py run --config "E:\Experiments\config.json"
 ```
 
-同时应复制它引用的文件，或修改引用路径。`run` 根据 `experiment.mode` 选择模式；`compare` 自动跑两种模式，并在两组关闭评分触发的提前停止。**fixed 组仍调用 Jev 记录评分，只是不根据评分调整参数**。当前尚未实现“连续生成且完全不调用 Jev”的第三组基线。
+同时应复制它引用的文件，或修改引用路径。`run` 根据 `experiment.mode` 选择模式；`compare` 自动跑两种模式，并在两组关闭评分触发的提前停止。**fixed 组仍调用 Jev 记录评分，只是不根据评分调整参数**。`run --mode baseline` 可另跑不调用 Jev 的基线；如何与 adaptive 批次严格配对见[结果分析](analysis.md)。
 
 Jev 请求数上限为：
 
@@ -250,7 +252,7 @@ python run.py summarize
 
 ## 5. 首次运行与结果解读
 
-1. 修改路径、`jev.api_key` 和题目文件。
+1. 修改路径和题目文件，并提供本地 `jev.api_key` 或 `TYPESAFE_API_KEY`。
 2. 依次执行 `check`、`doctor`、`smoke`。
 3. 根据实验目标选择 **run 或 compare 其中一个**。
 4. 执行 `summarize` 并查看保存记录。
@@ -263,13 +265,13 @@ cd Jev-for-llm
 python run.py run
 ```
 
-如果要跑两组对照，将最后一条换成 `python run.py compare` 即可，不需要在 config.json 之外配置密钥。`check` 不会验证 API 密钥是否能通过认证；`doctor` 只验证参数构造，不能证明模型和所有参数组合实际运行成功。
+如果要跑两组对照，将最后一条换成 `python run.py compare` 即可。`check` 不会验证 API 密钥是否能通过认证；`doctor` 只验证参数构造，不能证明模型和所有参数组合实际运行成功。
 
 每个题目/种子/模式生成一个 `outputs/<timestamp>_<mode>/`，包含 `result.json` 和 `answer.txt`。`answer.txt` 按轮次列出每轮结束时的**累计答案快照**；最后一段就是最终完整答案。`result.json` 的每轮还保留 `answer_snapshot`。重点查看每轮 `rounds[]` 的 `scores`、`decision`、`applied_parameters`、`generation_request`、耗时以及最终停止原因。
 
 决策只是对下一段的提议，**下一轮实际请求才证明新参数被使用**。`decision_will_execute` 也不能单独证明下一次调用已成功。
 
-`completed` 表示循环正常结束，不代表答案正确。结束可能源于模型、token/上下文/轮数/调用预算，或启用的评分停止。Ctrl+C 通常会保存 interrupted 状态；强制结束进程可能留下 running 状态。程序保留部分记录。中断后可用 `python run.py compare --start-task 题目ID` 从该题开始继续整批，但该题会重新开始，不能接续到中断的段；先前结果目录不会被覆盖。Jev 临时 HTTP 5xx 错误最多额外重试两次，仍失败就停止后续实验。
+`completed` 表示循环正常结束，不代表答案正确。结束可能源于模型、token/上下文/轮数/调用预算，或启用的评分停止。Ctrl+C 通常会保存 interrupted 状态；强制结束进程可能留下 running 状态。程序保留部分记录。中断后用相同配置和批次 ID 执行 `python run.py compare --experiment-id 批次ID --resume`，已完成的题目/种子/模式会跳过；中断的运行从第一段重新开始，不会接续未完成的段。Jev 临时 HTTP 5xx 错误最多额外重试两次，仍失败就停止后续实验。
 
 配置好密钥后，可将控制台输出存到本地已有日志目录：
 

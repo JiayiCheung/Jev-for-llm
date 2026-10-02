@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Jev · 实验批次</title>
+  <link rel="stylesheet" href="dashboard.css">
+  <script>window.JEV_TASKS = {};</script>
+  <script defer src="data/batches.js"></script>
+  <script defer src="batch-switch.js"></script>
+  <script defer src="data/overview.js"></script>
+  <script defer src="run.js"></script>
+</head>
+<body>
+  <header class="top"><div><strong>Jev</strong><span class="bar">/</span><span id="nav-title">实验批次</span></div><div class="top-right"><a href="../../" id="all-batches">全部批次</a><div class="language-switch"><button id="zh" type="button" aria-pressed="true">中文</button><button id="en" type="button" aria-pressed="false">English</button></div></div></header>
+  <main>
+    <div class="intro"><div><div class="eyebrow" id="eyebrow">单模式实验</div><h1 id="batch-title"></h1><p id="intro"></p></div><div class="count" id="count"></div></div>
+    <div class="toolbar"><label><span id="batch-label">实验批次</span><select id="experiment-batch" aria-label="实验批次"></select></label><label><span id="filter-label">答案筛选</span><select id="grade-filter"><option value="all">全部</option><option value="correct">正确</option><option value="incorrect">错误</option><option value="ungraded">未评分</option></select></label><label class="search"><span id="search-label">搜索任务</span><input id="search" type="search" placeholder="Task ID"></label></div>
+    <section class="kpis" id="kpis"></section>
+    <div class="section-label" id="charts-label">01 · 任务趋势</div>
+    <section class="grid"><article class="panel"><h2 id="token-title">生成 token</h2><p id="chart-note">按任务顺序；超过 100 道时分箱取均值。</p><div class="chart" id="token-chart"></div></article><article class="panel"><h2 id="time-title">请求耗时</h2><p id="time-note">Qwen 生成与 Jev 请求的计时之和。</p><div class="chart" id="time-chart"></div></article></section>
+    <div class="section-label" id="table-label">02 · 逐题记录</div>
+    <section class="panel table-panel"><div class="panel-head"><div><h2 id="task-title">任务明细</h2><p id="task-note">每页 50 条；点击任务查看逐轮记录。</p></div><span id="table-count"></span></div><div class="table-scroll"><table><thead><tr><th id="th-task">任务 / 种子</th><th id="th-grade">答案</th><th>Token</th><th id="th-time">请求耗时</th><th id="th-calls">Jev 调用</th><th id="th-changes">参数变更</th></tr></thead><tbody id="task-rows"></tbody></table></div><div class="pagination"><button id="prev">上一页</button><span id="page"></span><button id="next">下一页</button></div></section>
+    <section id="detail" class="detail" hidden><div class="detail-head"><div><div class="eyebrow" id="detail-label">任务轨迹</div><h2 id="detail-title"></h2></div><button id="close">关闭</button></div><div id="prompt" class="prompt"></div><div id="run-stats" class="run-stats"></div><article class="panel"><h3 id="round-title">逐轮记录</h3><div class="table-scroll"><table><thead><tr><th id="th-round">轮次</th><th>Token</th><th id="th-score">Score / 效用</th><th id="th-round-time">生成 / Jev 秒</th><th id="th-action">决策</th><th id="th-params">实际采样参数</th></tr></thead><tbody id="round-rows"></tbody></table></div></article><details class="answer"><summary id="answer-label">查看答案末段和结果路径</summary><pre id="answer"></pre><small id="path"></small></details></section>
+    <p class="footnote" id="footnote">正确率只统计可独立判分的已完成任务；未评分任务不计入分母。本页只描述所选批次，不代表与其他实验可直接比较。</p>
+  </main>
+</body>
+</html>

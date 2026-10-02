@@ -38,7 +38,7 @@ def validate(c):
             "Use policy.stopping and policy.rollback.score_drop (normalized 0-1 units)"
         )
 
-    if e["mode"] not in ("adaptive", "fixed"):
+    if e["mode"] not in ("adaptive", "fixed", "baseline"):
         raise ValueError("Unknown experiment mode")
 
     for name in ("chunk_tokens", "total_tokens", "max_rounds"):

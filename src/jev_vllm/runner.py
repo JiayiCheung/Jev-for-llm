@@ -1,7 +1,7 @@
 import json
 import time
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 import platform
 import importlib.metadata
@@ -51,7 +51,8 @@ def execute(c, task, seed, vllm, jev, record, save):
     record["prompt_token_count"] = len(prefix)
     ids, text = [], ""
     params = deepcopy(c["sampling"])
-    ctl = Controller(c["policy"], c["parameters"], c["experiment"]["mode"])
+    baseline = c["experiment"]["mode"] == "baseline"
+    ctl = None if baseline else Controller(c["policy"], c["parameters"], c["experiment"]["mode"])
 
     for step in range(g["max_rounds"]):
         room = min(
@@ -121,6 +122,19 @@ def execute(c, task, seed, vllm, jev, record, save):
         )
         row["token_end"] = len(ids)
         row["answer_snapshot"] = text
+        if baseline:
+            if choice["finish_reason"] == "stop":
+                record["stop_reason"] = "model_stop"
+            elif len(ids) >= g["total_tokens"]:
+                record["stop_reason"] = "token_budget"
+            elif len(prefix) + len(ids) >= tok["max_model_len"]:
+                record["stop_reason"] = "context_budget"
+            elif step + 1 >= g["max_rounds"]:
+                record["stop_reason"] = "round_budget"
+            save()
+            if record.get("stop_reason"):
+                return
+            continue
         evaluation = score_request(task["prompt"], text, recent, step, c["jev"])
         row["evaluation_request"] = evaluation
         record["jev_calls"] += 1
@@ -208,7 +222,7 @@ def execute(c, task, seed, vllm, jev, record, save):
         save()
 
 
-def run_experiment(c, task, seed, vllm, jev):
+def run_experiment(c, task, seed, vllm, jev, experiment=None):
     directory = Path(c["paths"]["outputs"]) / (
         datetime.now().strftime("%Y%m%d_%H%M%S_%f") + "_" + c["experiment"]["mode"]
     )
@@ -224,6 +238,11 @@ def run_experiment(c, task, seed, vllm, jev):
         "jev_calls": 0,
         "generated_token_count": 0,
     }
+    if experiment is not None:
+        record["experiment"] = {
+            **experiment,
+            "started_utc": datetime.now(timezone.utc).isoformat(),
+        }
     record["environment"] = {
         "python": platform.python_version(),
         "platform": platform.platform(),
