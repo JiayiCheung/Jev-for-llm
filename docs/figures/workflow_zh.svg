@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 3250" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 3130" role="img" aria-labelledby="title desc">
   <title id="title">单次 run：Jev 引导的分段推理</title>
   <desc id="desc">从参数初始化到下一段生效 · 一道题、一个种子的完整循环</desc>
   <defs><marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1 L10 6 L1 11" fill="none" stroke="#8ab6d4" stroke-width="1.8"/></marker></defs>
   <style>
     .node{fill:#12273e;stroke:#386381;stroke-width:2}
-    .node.start,.node.emphasis{fill:#10395b;stroke:#448ec2}
+    .node.emphasis{fill:#10395b;stroke:#448ec2}
     .node.jev{fill:#10374d;stroke:#38abc0}
     .node.decision{fill:#0b2033;stroke:#6ba3c7;stroke-dasharray:7 6}
     .node.record{fill:#142434;stroke:#526d80}.node.finish{fill:#243142;stroke:#75899a}
@@ -15,156 +15,153 @@
     .edge.record{stroke:#708c9e}.edge.branch{stroke:#83a7c2}.edge.bypass{stroke:#55b6ca}.edge.loop{stroke:#4fc0dd;stroke-width:3}
     .edge-label{fill:#9ddafa;font:700 19px Arial,'Microsoft YaHei',sans-serif}
   </style>
-  <rect width="1800" height="3250" rx="28" fill="#081522"/>
+  <rect width="1800" height="3130" rx="28" fill="#081522"/>
   <text x="65" y="75" fill="#ecf7ff" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="47" font-weight="700">单次 run：Jev 引导的分段推理</text>
   <text x="67" y="120" fill="#aac8dc" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="23">从参数初始化到下一段生效 · 一道题、一个种子的完整循环</text>
   <path d="M65 138 H1725" stroke="#365b78" stroke-width="2"/>
-  <path d="M900 263 V298" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M900 412 V447" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M900 561 V596" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M900 710 V745" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M900 859 V894" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M900 1029 V1064" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M560 802 H30 V1759 H65" class="edge branch" marker-end="url(#arrowhead)"/>
-  <path d="M560 961 H485" class="edge record" marker-end="url(#arrowhead)"/>
-  <path d="M900 1178 V1213" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M560 1270 H485" class="edge record" marker-end="url(#arrowhead)"/>
-  <path d="M900 1327 V1362" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M560 1429 H485" class="edge record" marker-end="url(#arrowhead)"/>
-  <path d="M900 1497 V1532" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M900 1667 V1702" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M560 1759 H485" class="edge branch" marker-end="url(#arrowhead)"/>
-  <path d="M900 1816 V1851" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M560 1908 H485" class="edge branch" marker-end="url(#arrowhead)"/>
-  <path d="M900 1965 V2000" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M560 2057 H485" class="edge branch" marker-end="url(#arrowhead)"/>
-  <path d="M1240 2057 H1305" class="edge branch" marker-end="url(#arrowhead)"/>
-  <path d="M1515 2135 V2170" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M1515 2284 V2319" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M1515 2433 V2468" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M1515 2603 V2638" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M1515 2752 V2787" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M1515 2901 V2936" class="edge " marker-end="url(#arrowhead)"/>
-  <path d="M1305 2695 H1268 V2993 H1305" class="edge bypass" marker-end="url(#arrowhead)"/>
-  <path d="M1305 2068 H1278 V3138 H1240" class="edge bypass" marker-end="url(#arrowhead)"/>
-  <path d="M1725 2993 H1770 V3142 H1240" class="edge branch" marker-end="url(#arrowhead)"/>
-  <path d="M275 1965 V3060 H530 V3142 H560" class="edge branch" marker-end="url(#arrowhead)"/>
-  <path d="M350 2114 V3030 H500 V3110 H560" class="edge branch" marker-end="url(#arrowhead)"/>
-  <path d="M900 3199 V3223 H1780 V802 H1240" class="edge loop" marker-end="url(#arrowhead)"/>
-  <g><rect x="560" y="155" width="680" height="108" rx="20" class="node start"/>
-    <text x="900" y="190" text-anchor="middle" class="node-title">运行 run.py run</text>
-    <text x="900" y="225" text-anchor="middle" class="node-detail">cli.main 读取任务与种子</text><text x="900" y="253" text-anchor="middle" class="node-detail">每轮可依据 Jev 反馈调整参数</text>
-  </g>
-  <g><rect x="560" y="298" width="680" height="114" rx="20" class="node normal"/>
+  <g transform="translate(0,-120)">
+    <path d="M900 412 V447" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M900 561 V596" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M900 710 V745" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M900 859 V894" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M900 1029 V1064" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M560 802 H30 V1759 H65" class="edge branch" marker-end="url(#arrowhead)"/>
+    <path d="M560 961 H485" class="edge record" marker-end="url(#arrowhead)"/>
+    <path d="M900 1178 V1213" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M560 1270 H485" class="edge record" marker-end="url(#arrowhead)"/>
+    <path d="M900 1327 V1362" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M560 1429 H485" class="edge record" marker-end="url(#arrowhead)"/>
+    <path d="M900 1497 V1532" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M900 1667 V1702" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M560 1759 H485" class="edge branch" marker-end="url(#arrowhead)"/>
+    <path d="M900 1816 V1851" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M560 1908 H485" class="edge branch" marker-end="url(#arrowhead)"/>
+    <path d="M900 1965 V2000" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M560 2057 H485" class="edge branch" marker-end="url(#arrowhead)"/>
+    <path d="M1240 2057 H1305" class="edge branch" marker-end="url(#arrowhead)"/>
+    <path d="M1515 2135 V2170" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M1515 2284 V2319" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M1515 2433 V2468" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M1515 2603 V2638" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M1515 2752 V2787" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M1515 2901 V2936" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M1305 2695 H1268 V2993 H1305" class="edge bypass" marker-end="url(#arrowhead)"/>
+    <path d="M1305 2068 H1278 V3138 H1240" class="edge bypass" marker-end="url(#arrowhead)"/>
+    <path d="M1725 2993 H1770 V3142 H1240" class="edge branch" marker-end="url(#arrowhead)"/>
+    <path d="M275 1965 V3060 H530 V3142 H560" class="edge branch" marker-end="url(#arrowhead)"/>
+    <path d="M350 2114 V3030 H500 V3110 H560" class="edge branch" marker-end="url(#arrowhead)"/>
+    <path d="M900 3199 V3223 H1780 V802 H1240" class="edge loop" marker-end="url(#arrowhead)"/>
+    <g><rect x="560" y="298" width="680" height="114" rx="20" class="node normal"/>
     <text x="900" y="333" text-anchor="middle" class="node-title">加载并校验三份配置</text>
     <text x="900" y="368" text-anchor="middle" class="node-detail">config.json · parameters.json</text><text x="900" y="396" text-anchor="middle" class="node-detail">jev_questions.json → control 与评分规则</text>
   </g>
-  <g><rect x="560" y="447" width="680" height="114" rx="20" class="node normal"/>
+    <g><rect x="560" y="447" width="680" height="114" rx="20" class="node normal"/>
     <text x="900" y="482" text-anchor="middle" class="node-title">构造初始采样映射</text>
     <text x="900" y="517" text-anchor="middle" class="node-detail">initial_parameters：name → initial</text><text x="900" y="545" text-anchor="middle" class="node-detail">request_parameters：name → api_name</text>
   </g>
-  <g><rect x="560" y="596" width="680" height="114" rx="20" class="node normal"/>
+    <g><rect x="560" y="596" width="680" height="114" rx="20" class="node normal"/>
     <text x="900" y="631" text-anchor="middle" class="node-title">准备 Qwen 与本轮输出</text>
     <text x="900" y="666" text-anchor="middle" class="node-detail">PythonBackend 持有一个 vLLM 模型</text><text x="900" y="694" text-anchor="middle" class="node-detail">聊天模板编码题目；建立 result.json / answer.txt</text>
   </g>
-  <g><rect x="560" y="745" width="680" height="114" rx="20" class="node decision"/>
+    <g><rect x="560" y="745" width="680" height="114" rx="20" class="node decision"/>
     <text x="900" y="780" text-anchor="middle" class="node-title">本轮还能发起生成吗？</text>
     <text x="900" y="815" text-anchor="middle" class="node-detail">检查轮次、剩余 token、上下文空间</text><text x="900" y="843" text-anchor="middle" class="node-detail">以及 Jev 请求次数上限</text>
   </g>
-  <g><rect x="560" y="894" width="680" height="135" rx="20" class="node emphasis"/>
+    <g><rect x="560" y="894" width="680" height="135" rx="20" class="node emphasis"/>
     <text x="900" y="929" text-anchor="middle" class="node-title">构造 generation_request</text>
     <text x="900" y="964" text-anchor="middle" class="node-detail">prompt = 提示词 token + 已生成 token ID</text><text x="900" y="992" text-anchor="middle" class="node-detail">max_tokens = 三种剩余额度最小值；seed + step</text>
   </g>
-  <g><rect x="65" y="894" width="420" height="135" rx="20" class="node record"/>
+    <g><rect x="65" y="894" width="420" height="135" rx="20" class="node record"/>
     <text x="275" y="929" text-anchor="middle" class="node-title">生成前写入 result.json</text>
     <text x="275" y="964" text-anchor="middle" class="node-detail">rounds[].applied_parameters</text><text x="275" y="992" text-anchor="middle" class="node-detail">rounds[].generation_request</text>
   </g>
-  <g><rect x="560" y="1064" width="680" height="114" rx="20" class="node emphasis"/>
+    <g><rect x="560" y="1064" width="680" height="114" rx="20" class="node emphasis"/>
     <text x="900" y="1099" text-anchor="middle" class="node-title">vLLM 生成一个片段</text>
     <text x="900" y="1134" text-anchor="middle" class="node-detail">把原生字段交给 SamplingParams</text><text x="900" y="1162" text-anchor="middle" class="node-detail">LLM.generate 返回 token ID 与结束原因</text>
   </g>
-  <g><rect x="560" y="1213" width="680" height="114" rx="20" class="node normal"/>
+    <g><rect x="560" y="1213" width="680" height="114" rx="20" class="node normal"/>
     <text x="900" y="1248" text-anchor="middle" class="node-title">校验、拼接并解码</text>
     <text x="900" y="1283" text-anchor="middle" class="node-detail">把新 token ID 接到累计序列</text><text x="900" y="1311" text-anchor="middle" class="node-detail">得到全文 generated 与本段 recent</text>
   </g>
-  <g><rect x="65" y="1213" width="420" height="114" rx="20" class="node record"/>
+    <g><rect x="65" y="1213" width="420" height="114" rx="20" class="node record"/>
     <text x="275" y="1248" text-anchor="middle" class="node-title">保存当前答案快照</text>
     <text x="275" y="1283" text-anchor="middle" class="node-detail">rounds[].answer_snapshot</text><text x="275" y="1311" text-anchor="middle" class="node-detail">answer.txt 追加本轮累计答案</text>
   </g>
-  <g><rect x="560" y="1362" width="680" height="135" rx="20" class="node jev"/>
+    <g><rect x="560" y="1362" width="680" height="135" rx="20" class="node jev"/>
     <text x="900" y="1397" text-anchor="middle" class="node-title">Jev 请求 ①：四项 Score</text>
     <text x="900" y="1432" text-anchor="middle" class="node-detail">score_request：task / generated / recent / step</text><text x="900" y="1460" text-anchor="middle" class="node-detail">正确性 · 相关性 · 重复性 · 完整性</text>
   </g>
-  <g><rect x="65" y="1362" width="420" height="135" rx="20" class="node record"/>
+    <g><rect x="65" y="1362" width="420" height="135" rx="20" class="node record"/>
     <text x="275" y="1397" text-anchor="middle" class="node-title">记录评分请求与返回</text>
     <text x="275" y="1432" text-anchor="middle" class="node-detail">evaluation_request / response</text><text x="275" y="1460" text-anchor="middle" class="node-detail">请求耗时与 Jev 调用次数</text>
   </g>
-  <g><rect x="560" y="1532" width="680" height="135" rx="20" class="node normal"/>
+    <g><rect x="560" y="1532" width="680" height="135" rx="20" class="node normal"/>
     <text x="900" y="1567" text-anchor="middle" class="node-title">解析评分并计算效用</text>
     <text x="900" y="1602" text-anchor="middle" class="node-detail">验证答案与概率；0–4 映射到 0–1</text><text x="900" y="1630" text-anchor="middle" class="node-detail">重复性取反后按权重汇总</text>
   </g>
-  <g><rect x="560" y="1702" width="680" height="114" rx="20" class="node decision"/>
+    <g><rect x="560" y="1702" width="680" height="114" rx="20" class="node decision"/>
     <text x="900" y="1737" text-anchor="middle" class="node-title">本轮是否应当结束？</text>
     <text x="900" y="1772" text-anchor="middle" class="node-detail">模型停止 / 可选评分停止</text><text x="900" y="1800" text-anchor="middle" class="node-detail">token、上下文、轮次或 Jev 预算耗尽</text>
   </g>
-  <g><rect x="65" y="1702" width="420" height="114" rx="20" class="node finish"/>
+    <g><rect x="65" y="1702" width="420" height="114" rx="20" class="node finish"/>
     <text x="275" y="1737" text-anchor="middle" class="node-title">结束并保存最终状态</text>
     <text x="275" y="1772" text-anchor="middle" class="node-detail">stop_reason 与各轮记录留在 result.json</text><text x="275" y="1800" text-anchor="middle" class="node-detail">已生成文字仍在 answer.txt</text>
   </g>
-  <g><rect x="560" y="1851" width="680" height="114" rx="20" class="node decision"/>
+    <g><rect x="560" y="1851" width="680" height="114" rx="20" class="node decision"/>
     <text x="900" y="1886" text-anchor="middle" class="node-title">上轮调整导致效用下降？</text>
     <text x="900" y="1921" text-anchor="middle" class="node-detail">比较本轮效用与改动前效用</text><text x="900" y="1949" text-anchor="middle" class="node-detail">下降超过 rollback.score_drop 才回退</text>
   </g>
-  <g><rect x="65" y="1851" width="420" height="114" rx="20" class="node normal"/>
+    <g><rect x="65" y="1851" width="420" height="114" rx="20" class="node normal"/>
     <text x="275" y="1886" text-anchor="middle" class="node-title">恢复改动前的参数</text>
     <text x="275" y="1921" text-anchor="middle" class="node-detail">文字不会回退</text><text x="275" y="1949" text-anchor="middle" class="node-detail">下一段才使用恢复后的值</text>
   </g>
-  <g><rect x="560" y="2000" width="680" height="114" rx="20" class="node decision"/>
+    <g><rect x="560" y="2000" width="680" height="114" rx="20" class="node decision"/>
     <text x="900" y="2035" text-anchor="middle" class="node-title">目前仍在冷却期？</text>
     <text x="900" y="2070" text-anchor="middle" class="node-detail">根据 last_change 与 cooldown_rounds 判断</text><text x="900" y="2098" text-anchor="middle" class="node-detail">冷却时跳过新的 Jev Choice</text>
   </g>
-  <g><rect x="65" y="2000" width="420" height="114" rx="20" class="node normal"/>
+    <g><rect x="65" y="2000" width="420" height="114" rx="20" class="node normal"/>
     <text x="275" y="2035" text-anchor="middle" class="node-title">保持当前参数</text>
     <text x="275" y="2070" text-anchor="middle" class="node-detail">本轮不产生新改动</text><text x="275" y="2098" text-anchor="middle" class="node-detail">下一段沿用当前值</text>
   </g>
-  <g><rect x="1305" y="2000" width="420" height="135" rx="20" class="node emphasis"/>
+    <g><rect x="1305" y="2000" width="420" height="135" rx="20" class="node emphasis"/>
     <text x="1515" y="2035" text-anchor="middle" class="node-title">按类型生成方向候选</text>
     <text x="1515" y="2070" text-anchor="middle" class="node-detail">数值 / 可空数值 / 布尔 / 枚举</text><text x="1515" y="2098" text-anchor="middle" class="node-detail">其他类型只给可行项；无候选则保持</text>
   </g>
-  <g><rect x="1305" y="2170" width="420" height="114" rx="20" class="node jev"/>
+    <g><rect x="1305" y="2170" width="420" height="114" rx="20" class="node jev"/>
     <text x="1515" y="2205" text-anchor="middle" class="node-title">Jev 请求 ②：选择动作</text>
     <text x="1515" y="2240" text-anchor="middle" class="node-detail">direction_request 合并各参数 Choice</text><text x="1515" y="2268" text-anchor="middle" class="node-detail">每题附当前值、说明与本轮 Score</text>
   </g>
-  <g><rect x="1305" y="2319" width="420" height="114" rx="20" class="node normal"/>
+    <g><rect x="1305" y="2319" width="420" height="114" rx="20" class="node normal"/>
     <text x="1515" y="2354" text-anchor="middle" class="node-title">校验方向 Choice 返回</text>
     <text x="1515" y="2389" text-anchor="middle" class="node-detail">parse_choices 核对选项与概率分布</text><text x="1515" y="2417" text-anchor="middle" class="node-detail">keep 不产生具体值问题</text>
   </g>
-  <g><rect x="1305" y="2468" width="420" height="135" rx="20" class="node normal"/>
+    <g><rect x="1305" y="2468" width="420" height="135" rx="20" class="node normal"/>
     <text x="1515" y="2503" text-anchor="middle" class="node-title">构造合法的具体值</text>
     <text x="1515" y="2538" text-anchor="middle" class="node-detail">数值按窗口与步长给 1–3 步</text><text x="1515" y="2566" text-anchor="middle" class="node-detail">其他类型使用已审核候选或直接切换</text>
   </g>
-  <g><rect x="1305" y="2638" width="420" height="114" rx="20" class="node decision"/>
+    <g><rect x="1305" y="2638" width="420" height="114" rx="20" class="node decision"/>
     <text x="1515" y="2673" text-anchor="middle" class="node-title">是否存在多个具体候选？</text>
     <text x="1515" y="2708" text-anchor="middle" class="node-detail">单一目标值可直接确定</text><text x="1515" y="2736" text-anchor="middle" class="node-detail">多个候选才生成 value_request</text>
   </g>
-  <g><rect x="1305" y="2787" width="420" height="114" rx="20" class="node jev"/>
+    <g><rect x="1305" y="2787" width="420" height="114" rx="20" class="node jev"/>
     <text x="1515" y="2822" text-anchor="middle" class="node-title">Jev 请求 ③：选择具体值</text>
     <text x="1515" y="2857" text-anchor="middle" class="node-detail">从程序给出的合法值中选一项</text><text x="1515" y="2885" text-anchor="middle" class="node-detail">chosen_values 映射回真实参数值</text>
   </g>
-  <g><rect x="1305" y="2936" width="420" height="114" rx="20" class="node emphasis"/>
+    <g><rect x="1305" y="2936" width="420" height="114" rx="20" class="node emphasis"/>
     <text x="1515" y="2971" text-anchor="middle" class="node-title">提交本轮决策</text>
     <text x="1515" y="3006" text-anchor="middle" class="node-detail">Controller.commit 合并真正发生的改动</text><text x="1515" y="3034" text-anchor="middle" class="node-detail">记录 pending，供下一轮检验或回退</text>
   </g>
-  <g><rect x="560" y="3085" width="680" height="114" rx="20" class="node emphasis"/>
+    <g><rect x="560" y="3085" width="680" height="114" rx="20" class="node emphasis"/>
     <text x="900" y="3120" text-anchor="middle" class="node-title">准备下一轮生成</text>
     <text x="900" y="3155" text-anchor="middle" class="node-detail">复制 decision.parameters；标记 will_execute</text><text x="900" y="3183" text-anchor="middle" class="node-detail">新值在下一轮 generation_request 才实际生效</text>
   </g>
-  <text x="505" y="1746" class="edge-label">是</text>
-  <text x="918" y="1840" class="edge-label">否</text>
-  <text x="505" y="1895" class="edge-label">需要回退</text>
-  <text x="918" y="1988" class="edge-label">否</text>
-  <text x="505" y="2045" class="edge-label">冷却中</text>
-  <text x="1248" y="2044" class="edge-label">可调整</text>
-  <text x="1535" y="2768" class="edge-label">多个候选</text>
-  <text x="1215" y="2773" class="edge-label">单一目标 / 无需再问</text>
+    <text x="505" y="1746" class="edge-label">是</text>
+    <text x="918" y="1840" class="edge-label">否</text>
+    <text x="505" y="1895" class="edge-label">需要回退</text>
+    <text x="918" y="1988" class="edge-label">否</text>
+    <text x="505" y="2045" class="edge-label">冷却中</text>
+    <text x="1248" y="2044" class="edge-label">可调整</text>
+    <text x="1535" y="2768" class="edge-label">多个候选</text>
+    <text x="1215" y="2773" class="edge-label">单一目标 / 无需再问</text>
+  </g>
 </svg>

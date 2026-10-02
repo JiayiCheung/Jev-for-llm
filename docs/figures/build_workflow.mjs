@@ -6,7 +6,6 @@ const directory = dirname(fileURLToPath(import.meta.url));
 const words = {
   zh: {
     title: '单次 run：Jev 引导的分段推理', subtitle: '从参数初始化到下一段生效 · 一道题、一个种子的完整循环',
-    start: ['运行 run.py run', 'cli.main 读取任务与种子', '每轮可依据 Jev 反馈调整参数'],
     config: ['加载并校验三份配置', 'config.json · parameters.json', 'jev_questions.json → control 与评分规则'],
     initial: ['构造初始采样映射', 'initial_parameters：name → initial', 'request_parameters：name → api_name'],
     setup: ['准备 Qwen 与本轮输出', 'PythonBackend 持有一个 vLLM 模型', '聊天模板编码题目；建立 result.json / answer.txt'],
@@ -38,7 +37,6 @@ const words = {
   },
   en: {
     title: 'One run: Jev-guided segmented inference', subtitle: 'From initial parameters to the next segment · one task and seed',
-    start: ['Run run.py run', 'cli.main loads tasks and seeds', 'Jev feedback may update next-round settings'],
     config: ['Load and validate three inputs', 'config.json · parameters.json', 'jev_questions.json → controls and Score rubrics'],
     initial: ['Build initial sampling map', 'initial_parameters: name → initial', 'request_parameters: name → api_name'],
     setup: ['Prepare Qwen and run records', 'PythonBackend holds one vLLM model', 'Encode task; create result.json / answer.txt'],
@@ -72,7 +70,7 @@ const words = {
 
 const escapeXml = value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 const place = {
-  start:[560,155,680,108], config:[560,298,680,114], initial:[560,447,680,114],
+  config:[560,298,680,114], initial:[560,447,680,114],
   setup:[560,596,680,114], preflight:[560,745,680,114], request:[560,894,680,135],
   requestLog:[65,894,420,135], generate:[560,1064,680,114], decode:[560,1213,680,114],
   answerLog:[65,1213,420,114], score:[560,1362,680,135], scoreLog:[65,1362,420,135],
@@ -85,7 +83,7 @@ const place = {
   commit:[1305,2936,420,114], next:[560,3085,680,114],
 };
 const kind = {
-  start:'start', config:'normal', initial:'normal', setup:'normal', preflight:'decision',
+  config:'normal', initial:'normal', setup:'normal', preflight:'decision',
   request:'emphasis', requestLog:'record', generate:'emphasis', decode:'normal',
   answerLog:'record', score:'jev', scoreLog:'record', parse:'normal',
   stop:'decision', finish:'finish', rollback:'decision', restore:'normal',
@@ -109,7 +107,7 @@ function diagram(lang) {
   const t = words[lang];
   const keys = Object.keys(place);
   const paths = [
-    edge('M900 263 V298'),edge('M900 412 V447'),edge('M900 561 V596'),
+    edge('M900 412 V447'),edge('M900 561 V596'),
     edge('M900 710 V745'),edge('M900 859 V894'),edge('M900 1029 V1064'),
     edge('M560 802 H30 V1759 H65','branch'),
     edge('M560 961 H485','record'),edge('M900 1178 V1213'),
@@ -136,13 +134,13 @@ function diagram(lang) {
     label(1535,2768,t.many),label(1215,2773,t.one),
   ];
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 3250" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 3130" role="img" aria-labelledby="title desc">
   <title id="title">${escapeXml(t.title)}</title>
   <desc id="desc">${escapeXml(t.subtitle)}</desc>
   <defs><marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1 L10 6 L1 11" fill="none" stroke="#8ab6d4" stroke-width="1.8"/></marker></defs>
   <style>
     .node{fill:#12273e;stroke:#386381;stroke-width:2}
-    .node.start,.node.emphasis{fill:#10395b;stroke:#448ec2}
+    .node.emphasis{fill:#10395b;stroke:#448ec2}
     .node.jev{fill:#10374d;stroke:#38abc0}
     .node.decision{fill:#0b2033;stroke:#6ba3c7;stroke-dasharray:7 6}
     .node.record{fill:#142434;stroke:#526d80}.node.finish{fill:#243142;stroke:#75899a}
@@ -152,13 +150,15 @@ function diagram(lang) {
     .edge.record{stroke:#708c9e}.edge.branch{stroke:#83a7c2}.edge.bypass{stroke:#55b6ca}.edge.loop{stroke:#4fc0dd;stroke-width:3}
     .edge-label{fill:#9ddafa;font:700 19px Arial,'Microsoft YaHei',sans-serif}
   </style>
-  <rect width="1800" height="3250" rx="28" fill="#081522"/>
+  <rect width="1800" height="3130" rx="28" fill="#081522"/>
   <text x="65" y="75" fill="#ecf7ff" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="47" font-weight="700">${escapeXml(t.title)}</text>
   <text x="67" y="120" fill="#aac8dc" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="23">${escapeXml(t.subtitle)}</text>
   <path d="M65 138 H1725" stroke="#365b78" stroke-width="2"/>
-  ${paths.join('\n  ')}
-  ${keys.map(key=>node(key,t[key])).join('\n  ')}
-  ${tags.join('\n  ')}
+  <g transform="translate(0,-120)">
+    ${paths.join('\n    ')}
+    ${keys.map(key=>node(key,t[key])).join('\n    ')}
+    ${tags.join('\n    ')}
+  </g>
 </svg>
 `;
 }
