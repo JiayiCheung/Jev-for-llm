@@ -97,7 +97,7 @@ const label = (x,y,t) => `<text x="${x}" y="${y}" class="edge-label">${escapeXml
 function node(key, lines) {
   const [x,y,w,h] = place[key];
   const first = y + (lines.length === 3 ? 35 : 45);
-  return `<g><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="20" class="node ${kind[key]}"/>
+  return `<g><rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" class="node ${kind[key]}"/>
     <text x="${x+w/2}" y="${first}" text-anchor="middle" class="node-title">${escapeXml(lines[0])}</text>
     ${lines.slice(1).map((line,i)=>`<text x="${x+w/2}" y="${first+35+i*28}" text-anchor="middle" class="node-detail">${escapeXml(line)}</text>`).join('')}
   </g>`;
@@ -137,23 +137,27 @@ function diagram(lang) {
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 3130" role="img" aria-labelledby="title desc">
   <title id="title">${escapeXml(t.title)}</title>
   <desc id="desc">${escapeXml(t.subtitle)}</desc>
-  <defs><marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1 L10 6 L1 11" fill="none" stroke="#8ab6d4" stroke-width="1.8"/></marker></defs>
+  <defs><marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1 L10 6 L1 11" fill="none" stroke="#626262" stroke-width="1.6"/></marker></defs>
   <style>
-    .node{fill:#12273e;stroke:#386381;stroke-width:2}
-    .node.emphasis{fill:#10395b;stroke:#448ec2}
-    .node.jev{fill:#10374d;stroke:#38abc0}
-    .node.decision{fill:#0b2033;stroke:#6ba3c7;stroke-dasharray:7 6}
-    .node.record{fill:#142434;stroke:#526d80}.node.finish{fill:#243142;stroke:#75899a}
-    .node-title{fill:#e6f4ff;font:700 26px Arial,'Microsoft YaHei',sans-serif}
-    .node-detail{fill:#b5cee0;font:20px Arial,'Microsoft YaHei',sans-serif}
-    .edge{fill:none;stroke:#8ab6d4;stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round}
-    .edge.record{stroke:#708c9e}.edge.branch{stroke:#83a7c2}.edge.bypass{stroke:#55b6ca}.edge.loop{stroke:#4fc0dd;stroke-width:3}
-    .edge-label{fill:#9ddafa;font:700 19px Arial,'Microsoft YaHei',sans-serif}
+    .node{fill:#f0f0ec;stroke:#737373;stroke-width:1.8}
+    .node.emphasis{fill:#e4eedc;stroke:#718369}
+    .node.jev{fill:#fff0ce;stroke:#8e805f}
+    .node.decision{fill:#fafafa;stroke:#777;stroke-dasharray:6 5}
+    .node.record{fill:#e9e8f3;stroke:#77788a}.node.finish{fill:#ededed;stroke:#777}
+    .node-title{fill:#2d2d2d;font:700 26px Arial,'Microsoft YaHei',sans-serif}
+    .node-detail{fill:#4b4b4b;font:20px Arial,'Microsoft YaHei',sans-serif}
+    .edge{fill:none;stroke:#626262;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
+    .edge.record,.edge.branch,.edge.bypass,.edge.loop{stroke:#626262}
+    .edge-label{fill:#454545;font:700 19px Arial,'Microsoft YaHei',sans-serif}
   </style>
-  <rect width="1800" height="3130" rx="28" fill="#081522"/>
-  <text x="65" y="75" fill="#ecf7ff" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="47" font-weight="700">${escapeXml(t.title)}</text>
-  <text x="67" y="120" fill="#aac8dc" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="23">${escapeXml(t.subtitle)}</text>
-  <path d="M65 138 H1725" stroke="#365b78" stroke-width="2"/>
+  <rect width="1800" height="3130" fill="#fff"/>
+  <rect x="12" y="12" width="1776" height="3106" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-dasharray="4 6"/>
+  <rect x="44" y="160" width="1712" height="582" fill="#f5f5f5"/>
+  <rect x="44" y="757" width="1712" height="835" fill="#f7f7f7"/>
+  <rect x="44" y="1607" width="1712" height="1352" fill="#f5f5f5"/>
+  <text x="65" y="75" fill="#292929" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="47" font-weight="700">${escapeXml(t.title)}</text>
+  <text x="67" y="120" fill="#555" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="23">${escapeXml(t.subtitle)}</text>
+  <path d="M65 138 H1725" stroke="#a0a0a0" stroke-width="1.5"/>
   <g transform="translate(0,-120)">
     ${paths.join('\n    ')}
     ${keys.map(key=>node(key,t[key])).join('\n    ')}
