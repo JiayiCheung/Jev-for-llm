@@ -247,52 +247,6 @@ python run.py summarize
 
 每个结果输出一条 JSON 摘要，包括题目、种子、模式、状态、停止原因、生成 token 数、Jev 调用数、耗时和路径。不调用模型或 API，但仍会加载当前配置和题目，因此这些文件需保持有效。只查找 outputs 直接子目录内的结果，不执行答案判分。
 
-### fixed / adaptive / compare 三种实验操作
-
-以下片段替换 `config.json` 已有的 `experiment` 对象，保留其他部分。
-
-**A. 固定参数，Jev 只负责观察评分**
-
-```json
-"experiment": {
-  "mode": "fixed",
-  "seeds": [42],
-  "max_jev_calls": 8
-}
-```
-
-```shell
-python run.py run
-```
-
-每段都评分，参数始终使用初值。结果目录以 `_fixed` 结尾，决策保持不变，原因可能为 `fixed_parameter_control`。10 道题、最多 8 轮时，请求上限为 80 次。
-
-**B. 根据 Jev 反馈自适应调参**
-
-```json
-"experiment": {
-  "mode": "adaptive",
-  "seeds": [42],
-  "max_jev_calls": 8
-}
-```
-
-```shell
-python run.py run
-```
-
-结果目录以 `_adaptive` 结尾，可能保持、调整、回退；若启用了评分停止，还可能据此结束。保持参数也是有效结果。10 道题、8 轮的请求上限为 240 次，还受各次运行的 `max_jev_calls` 限制。
-
-**C. 固定／自适应配对实验**
-
-保留以上任一配置，命令自动选择两组：
-
-```shell
-python run.py compare
-```
-
-10 道题、1 个种子，最多生成 20 个实验目录，8 轮时最多 320 次请求，还受各次运行的 `max_jev_calls` 限制。两组初值与预算一致，但 EOS 与预算停止仍有效，所以实际长度可能不同。分别查看 result.json 和 answer.txt；比较正确率仍需要独立标准答案判分器。
-
 ## 5. 首次运行与结果解读
 
 1. 修改路径、`jev.api_key` 和题目文件。

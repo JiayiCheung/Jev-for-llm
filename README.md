@@ -228,52 +228,6 @@ python run.py summarize
 
 Prints one JSON summary per result: task, seed, mode, status, stop reason, generated-token count, Jev-call count, elapsed seconds and file path. It makes no API/model call. It still loads the current configuration and tasks, so those files must remain valid. It searches immediate result subdirectories of the configured outputs directory; it does not grade answers.
 
-### Fixed / adaptive / compare: choose an experiment
-
-The following fragments replace the existing `experiment` object in `config.json`; keep all other sections.
-
-**A. Fixed parameters, with Jev observation**
-
-```json
-"experiment": {
-  "mode": "fixed",
-  "seeds": [42],
-  "max_jev_calls": 8
-}
-```
-
-```shell
-python run.py run
-```
-
-Each segment is evaluated, but parameters remain at their initial values. Expect folders ending in `_fixed`; decisions hold with `fixed_parameter_control`. With ten tasks and a maximum of eight rounds, at most 80 evaluator requests are made.
-
-**B. Adaptive parameters from Jev feedback**
-
-```json
-"experiment": {
-  "mode": "adaptive",
-  "seeds": [42],
-  "max_jev_calls": 8
-}
-```
-
-```shell
-python run.py run
-```
-
-Expect `_adaptive` folders. Decisions may hold, adjust or roll back; enabled score-based stopping can also stop generation. Holding parameters is a valid outcome, not proof that Jev was unused. The ten-task/eight-round upper bound is 240 requests, subject to each run's `max_jev_calls`.
-
-**C. Paired fixed/adaptive run**
-
-Keep either fragment above; the command selects both modes:
-
-```shell
-python run.py compare
-```
-
-Ten tasks and one seed produce up to 20 experiment folders and at most 320 requests at eight rounds, subject to each run's `max_jev_calls`. Both groups share starting values and budgets. Score-based stopping is disabled, but EOS and budget limits still apply. Read each group's result.json and answer.txt; an independent reference-answer grader is still needed for accuracy comparison.
-
 ## 5. First run and results
 
 1. Edit paths, direct API key and input tasks.
