@@ -2,15 +2,75 @@
 
 [English](parameter_examples.md) · [当前生效定义](../parameters.json) · [严格 JSON 副本](parameter_examples.json)
 
-当前 `parameters.json` 选了 20 个有代表性的原生 `SamplingParams` 字段。`jev_requests.py` 读取每项的 `type` 与 `control`，生成对应类型的 Choice。链接中的完整 JSON 是语法示例；改变实验须修改当前生效文件。旧版 `adjustments` 触发规则不再接受。
+`parameters.json` 的最外层是数组。下面三个代码块都是当前配置中的**完整参数条目**；可按需放入数组，用逗号隔开。`initial` 是初始值，`control` 定义允许的调整方式。修改后可运行 `python run.py doctor` 检查配置。
 
-- **小数：**`temperature=0.6`，调控窗口 `[0,2]`、分母 20。先选保持／增加／减少；增加后给出 0.7、0.8、0.9 三个具体值，减少则给出 0.5、0.4、0.3。`top_p`、`repetition_penalty`、`frequency_penalty`、`presence_penalty`、`min_p` 各自使用配置中的窗口和分母。
+## 数值型：`temperature`
+
+```json
+{
+  "name": "temperature",
+  "api_name": "temperature",
+  "stage": "completion",
+  "type": "number",
+  "initial": 0.6,
+  "minimum": 0,
+  "maximum": 2,
+  "description": "Sampling randomness; zero is greedy.",
+  "control": {
+    "window": [0, 2],
+    "denominator": 20
+  }
+}
+```
+
+当前值 `0.6` 可保持、增加或减少。步长为 `(2 − 0) ÷ 20 = 0.1`；选增加后，Jev 再从 `0.7`、`0.8`、`0.9` 中选具体值；选减少则从 `0.5`、`0.4`、`0.3` 中选。越界候选会被过滤。
+
+## 布尔型：`ignore_eos`
+
+```json
+{
+  "name": "ignore_eos",
+  "api_name": "ignore_eos",
+  "stage": "completion",
+  "type": "boolean",
+  "initial": false,
+  "description": "Continue sampling after EOS; the experiment token cap still applies.",
+  "control": {}
+}
+```
+
+当前为 `false` 时，Jev 只需选择保持或打开；打开就得到 `true`，无需再选择数值。当前为 `true` 时，可保持或关闭。空的 `control` 不表示禁止调整。
+
+## 可空整数：`logprobs`
+
+```json
+{
+  "name": "logprobs",
+  "api_name": "logprobs",
+  "stage": "completion",
+  "type": ["integer", "null"],
+  "initial": null,
+  "minimum": 0,
+  "maximum": 20,
+  "description": "Observation-only output log probabilities; not a quality control.",
+  "control": {
+    "enable_candidates": [0, 1, 2],
+    "window": [0, 20],
+    "denominator": 20
+  }
+}
+```
+
+`null` 表示当前未启用，但条目仍参与实验。若 Jev 选择启用，再从 `0`、`1`、`2` 中选择起点；当前值为 `1` 时，步长为 `1`，增加候选是 `2`、`3`、`4`，也可关闭回到 `null`。`logprobs` 用于观察输出概率，不是 Jev 评分或直接的答案质量控制。
+
+## 其他类型
+
+- **其他小数：**`top_p`、`repetition_penalty`、`frequency_penalty`、`presence_penalty`、`min_p` 各自使用配置中的窗口和分母。
 - **整数：**`top_k=20`，实用窗口 `[1,101]`、分母 20，因此一步为 5；增加候选为 25、30、35。它另有单独的“关闭”动作，把值设为 0；再“启用”时回到 20。硬边界仍是 `[-1,1000000]`，不能拿一百万当作步长窗口。接近边界时删除越界或重复的候选。
-- **布尔：**`ignore_eos=false` 时只有保持／打开；为 true 时只有保持／关闭。选中切换后目标值已确定，无需第三次 Jev 请求。
 - **可空列表：**`stop_token_ids` 和 `allowed_token_ids` 需要分词器核实过的整数 ID，后者不能设置为空列表。已有列表时可移除元素或清空。Jev 不能凭空写入列表元素。
 - **可空映射：**`logit_bias=null` 要先填写核实过的 `control.entries`，每项包含整数 `token_id` 与有界数值 `value`。JSON 记录使用字符串键，后端在构造原生参数前转回整数 ID；已有映射时可删一项或清空。添加前应以实际模型分词器核对 token ID。
 - **枚举：**`output_kind` 初始为 `CUMULATIVE`，可切换到声明的另一个合法选项 `FINAL_ONLY`。后端把 JSON 字符串转换为 vLLM 原生枚举。
-- **可空整数：**`logprobs=null` 和 `prompt_logprobs=null` 可从核实过的 `0`、`1`、`2` 中选择启用起点。启用后，窗口 `[0,20]`、分母 20 给出整数步长 1：当前为 1 时，增加候选为 2、3、4，减少候选为 0，也可关闭回到 `null`。它们是观测设置，不是 Jev Score，也不是答案质量调控。
+- **其他可空整数：**`prompt_logprobs` 遵循与 `logprobs` 相同的启用和步长规则，属于观测设置。
 - **其他容易切换的字段：**`min_tokens` 只在 `0` 和 `1` 之间切换，确保只剩一个 token 生成空间时仍合法；`detokenize`、`skip_special_tokens`、`spaces_between_special_tokens`、`include_stop_str_in_output`、`flat_logprobs` 均为布尔开关。后几项改变观测或输出形式，依赖功能未启用时有的切换不会产生效果。
 
 每次方向请求的上下文都包含当前 20 个值。目前 17 项有可执行方向；只有 `stop_token_ids`、`allowed_token_ids` 和 `logit_bias` 要先补经核实的 token 候选，暂时只能保持。技术上能修改，不等于适合用来纠正错误答案。
