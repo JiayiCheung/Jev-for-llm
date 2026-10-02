@@ -4,6 +4,8 @@
 
 Qwen generates text locally through the Python vLLM API. Jev evaluates each segment using four Score rubrics. A configurable controller chooses the next segment's parameters. The model stays loaded throughout one process. Only Jev uses HTTPS; no local API server is required.
 
+![Jev-guided segmented inference: generation, scoring, fixed and adaptive decisions, and the next-segment feedback loop](docs/figures/workflow_en.svg)
+
 ## Contents
 
 - [Environment and installation](#1-environment-and-installation)
