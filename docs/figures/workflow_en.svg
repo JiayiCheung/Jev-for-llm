@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2380 3130" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2520 3130" role="img" aria-labelledby="title desc">
   <title id="title">One run: Jev-guided segmented inference</title>
   <desc id="desc">From initial parameters to the next segment · one task and seed</desc>
   <defs><marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1 L10 6 L1 11" fill="none" stroke="#626262" stroke-width="1.6"/></marker></defs>
@@ -15,14 +15,14 @@
     .edge.record,.edge.branch,.edge.bypass,.edge.loop{stroke:#626262}
     .edge-label{fill:#454545;font:700 19px Arial,'Microsoft YaHei',sans-serif}
   </style>
-  <rect width="2380" height="3130" fill="#fff"/>
-  <rect x="12" y="12" width="2356" height="3106" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-dasharray="4 6"/>
-  <rect x="44" y="160" width="2292" height="582" fill="#f5f5f5"/>
-  <rect x="44" y="757" width="2292" height="835" fill="#f7f7f7"/>
-  <rect x="44" y="1607" width="2292" height="1352" fill="#f5f5f5"/>
+  <rect width="2520" height="3130" fill="#fff"/>
+  <rect x="12" y="12" width="2496" height="3106" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-dasharray="4 6"/>
+  <rect x="44" y="160" width="2432" height="582" fill="#f5f5f5"/>
+  <rect x="44" y="757" width="2432" height="835" fill="#f7f7f7"/>
+  <rect x="44" y="1607" width="2432" height="1352" fill="#f5f5f5"/>
   <text x="65" y="75" fill="#292929" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="47" font-weight="700">One run: Jev-guided segmented inference</text>
   <text x="67" y="120" fill="#555" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="23">From initial parameters to the next segment · one task and seed</text>
-  <path d="M65 138 H2315" stroke="#a0a0a0" stroke-width="1.5"/>
+  <path d="M65 138 H2455" stroke="#a0a0a0" stroke-width="1.5"/>
   <g transform="translate(0,-120)">
     <path d="M1140 412 V447" class="edge " marker-end="url(#arrowhead)"/>
     <path d="M1140 561 V596" class="edge " marker-end="url(#arrowhead)"/>
@@ -43,18 +43,18 @@
     <path d="M1140 1965 V2000" class="edge " marker-end="url(#arrowhead)"/>
     <path d="M800 2057 H500" class="edge branch" marker-end="url(#arrowhead)"/>
     <path d="M1480 2057 H1830" class="edge branch" marker-end="url(#arrowhead)"/>
-    <path d="M2040 2135 V2170" class="edge " marker-end="url(#arrowhead)"/>
-    <path d="M2040 2284 V2319" class="edge " marker-end="url(#arrowhead)"/>
-    <path d="M2040 2433 V2468" class="edge " marker-end="url(#arrowhead)"/>
-    <path d="M2040 2603 V2638" class="edge " marker-end="url(#arrowhead)"/>
-    <path d="M2040 2752 V2787" class="edge " marker-end="url(#arrowhead)"/>
-    <path d="M2040 2901 V2936" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M2100 2135 V2170" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M2100 2284 V2319" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M2100 2433 V2468" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M2100 2603 V2638" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M2100 2752 V2787" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M2100 2901 V2936" class="edge " marker-end="url(#arrowhead)"/>
     <path d="M1830 2695 H1760 V2993 H1830" class="edge bypass" marker-end="url(#arrowhead)"/>
     <path d="M1830 2068 H1780 V3138 H1480" class="edge bypass" marker-end="url(#arrowhead)"/>
-    <path d="M2250 2993 H2310 V3142 H1480" class="edge branch" marker-end="url(#arrowhead)"/>
+    <path d="M2370 2993 H2460 V3142 H1480" class="edge branch" marker-end="url(#arrowhead)"/>
     <path d="M290 1965 V3060 H740 V3142 H800" class="edge branch" marker-end="url(#arrowhead)"/>
     <path d="M365 2114 V3030 H720 V3110 H800" class="edge branch" marker-end="url(#arrowhead)"/>
-    <path d="M1140 3199 V3223 H2320 V802 H1480" class="edge loop" marker-end="url(#arrowhead)"/>
+    <path d="M1140 3199 V3223 H2470 V802 H1480" class="edge loop" marker-end="url(#arrowhead)"/>
     <g><rect x="800" y="298" width="680" height="114" rx="2" class="node normal"/>
     <text x="1140" y="333" text-anchor="middle" class="node-title">Load and validate three inputs</text>
     <text x="1140" y="368" text-anchor="middle" class="node-detail">config.json · parameters.json</text><text x="1140" y="396" text-anchor="middle" class="node-detail">jev_questions.json → controls and Score rubrics</text>
@@ -127,33 +127,33 @@
     <text x="290" y="2035" text-anchor="middle" class="node-title">Keep current parameters</text>
     <text x="290" y="2070" text-anchor="middle" class="node-detail">No new change this round</text><text x="290" y="2098" text-anchor="middle" class="node-detail">Reuse current values next segment</text>
   </g>
-    <g><rect x="1830" y="2000" width="420" height="135" rx="2" class="node emphasis"/>
-    <text x="2040" y="2035" text-anchor="middle" class="node-title">Build type-specific actions</text>
-    <text x="2040" y="2070" text-anchor="middle" class="node-detail">Numeric / nullable numeric / boolean / enum</text><text x="2040" y="2098" text-anchor="middle" class="node-detail">Other types; no options means keep</text>
+    <g><rect x="1830" y="2000" width="540" height="135" rx="2" class="node emphasis"/>
+    <text x="2100" y="2035" text-anchor="middle" class="node-title">Build type-specific actions</text>
+    <text x="2100" y="2070" text-anchor="middle" class="node-detail">Numeric / nullable numeric / boolean / enum</text><text x="2100" y="2098" text-anchor="middle" class="node-detail">Other types; no options means keep</text>
   </g>
-    <g><rect x="1830" y="2170" width="420" height="114" rx="2" class="node jev"/>
-    <text x="2040" y="2205" text-anchor="middle" class="node-title">Jev call ②: choose actions</text>
-    <text x="2040" y="2240" text-anchor="middle" class="node-detail">direction_request groups parameter Choices</text><text x="2040" y="2268" text-anchor="middle" class="node-detail">Each includes current value, meaning, and Scores</text>
+    <g><rect x="1830" y="2170" width="540" height="114" rx="2" class="node jev"/>
+    <text x="2100" y="2205" text-anchor="middle" class="node-title">Jev call ②: choose actions</text>
+    <text x="2100" y="2240" text-anchor="middle" class="node-detail">direction_request groups parameter Choices</text><text x="2100" y="2268" text-anchor="middle" class="node-detail">Each includes current value, meaning, and Scores</text>
   </g>
-    <g><rect x="1830" y="2319" width="420" height="114" rx="2" class="node normal"/>
-    <text x="2040" y="2354" text-anchor="middle" class="node-title">Validate direction Choices</text>
-    <text x="2040" y="2389" text-anchor="middle" class="node-detail">parse_choices checks options and probabilities</text><text x="2040" y="2417" text-anchor="middle" class="node-detail">keep needs no exact-value question</text>
+    <g><rect x="1830" y="2319" width="540" height="114" rx="2" class="node normal"/>
+    <text x="2100" y="2354" text-anchor="middle" class="node-title">Validate direction Choices</text>
+    <text x="2100" y="2389" text-anchor="middle" class="node-detail">parse_choices checks options and probabilities</text><text x="2100" y="2417" text-anchor="middle" class="node-detail">keep needs no exact-value question</text>
   </g>
-    <g><rect x="1830" y="2468" width="420" height="135" rx="2" class="node normal"/>
-    <text x="2040" y="2503" text-anchor="middle" class="node-title">Generate legal exact values</text>
-    <text x="2040" y="2538" text-anchor="middle" class="node-detail">Numeric: one to three bounded steps</text><text x="2040" y="2566" text-anchor="middle" class="node-detail">Other types: reviewed candidates or direct switch</text>
+    <g><rect x="1830" y="2468" width="540" height="135" rx="2" class="node normal"/>
+    <text x="2100" y="2503" text-anchor="middle" class="node-title">Generate legal exact values</text>
+    <text x="2100" y="2538" text-anchor="middle" class="node-detail">Numeric: one to three bounded steps</text><text x="2100" y="2566" text-anchor="middle" class="node-detail">Other types: reviewed candidates or direct switch</text>
   </g>
-    <g><rect x="1830" y="2638" width="420" height="114" rx="2" class="node decision"/>
-    <text x="2040" y="2673" text-anchor="middle" class="node-title">More than one exact candidate?</text>
-    <text x="2040" y="2708" text-anchor="middle" class="node-detail">Single-target actions resolve directly</text><text x="2040" y="2736" text-anchor="middle" class="node-detail">Multiple values require a value_request</text>
+    <g><rect x="1830" y="2638" width="540" height="114" rx="2" class="node decision"/>
+    <text x="2100" y="2673" text-anchor="middle" class="node-title">More than one exact candidate?</text>
+    <text x="2100" y="2708" text-anchor="middle" class="node-detail">Single-target actions resolve directly</text><text x="2100" y="2736" text-anchor="middle" class="node-detail">Multiple values require a value_request</text>
   </g>
-    <g><rect x="1830" y="2787" width="420" height="114" rx="2" class="node jev"/>
-    <text x="2040" y="2822" text-anchor="middle" class="node-title">Jev call ③: choose exact values</text>
-    <text x="2040" y="2857" text-anchor="middle" class="node-detail">Select among program-generated legal options</text><text x="2040" y="2885" text-anchor="middle" class="node-detail">chosen_values maps back to real parameter values</text>
+    <g><rect x="1830" y="2787" width="540" height="114" rx="2" class="node jev"/>
+    <text x="2100" y="2822" text-anchor="middle" class="node-title">Jev call ③: choose exact values</text>
+    <text x="2100" y="2857" text-anchor="middle" class="node-detail">Select among program-generated legal options</text><text x="2100" y="2885" text-anchor="middle" class="node-detail">chosen_values maps back to real parameter values</text>
   </g>
-    <g><rect x="1830" y="2936" width="420" height="114" rx="2" class="node emphasis"/>
-    <text x="2040" y="2971" text-anchor="middle" class="node-title">Commit this round’s decision</text>
-    <text x="2040" y="3006" text-anchor="middle" class="node-detail">Controller.commit merges actual changes</text><text x="2040" y="3034" text-anchor="middle" class="node-detail">Save pending state for next-round feedback</text>
+    <g><rect x="1830" y="2936" width="540" height="114" rx="2" class="node emphasis"/>
+    <text x="2100" y="2971" text-anchor="middle" class="node-title">Commit this round’s decision</text>
+    <text x="2100" y="3006" text-anchor="middle" class="node-detail">Controller.commit merges actual changes</text><text x="2100" y="3034" text-anchor="middle" class="node-detail">Save pending state for next-round feedback</text>
   </g>
     <g><rect x="800" y="3085" width="680" height="114" rx="2" class="node emphasis"/>
     <text x="1140" y="3120" text-anchor="middle" class="node-title">Prepare the next round</text>
@@ -165,7 +165,7 @@
     <text x="1158" y="1988" class="edge-label">No</text>
     <text x="540" y="2045" class="edge-label">cooldown</text>
     <text x="1510" y="2044" class="edge-label">ready to adjust</text>
-    <text x="2060" y="2768" class="edge-label">multiple values</text>
+    <text x="2120" y="2768" class="edge-label">multiple values</text>
     <text x="1510" y="2773" class="edge-label">one target / no extra call</text>
   </g>
 </svg>

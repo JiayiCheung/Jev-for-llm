@@ -77,10 +77,10 @@ const place = {
   parse:[800,1532,680,135], stop:[800,1702,680,114], finish:[80,1702,420,114],
   rollback:[800,1851,680,114], restore:[80,1851,420,114],
   cooldown:[800,2000,680,114], hold:[80,2000,420,114],
-  directions:[1830,2000,420,135], directionCall:[1830,2170,420,114],
-  parseDirection:[1830,2319,420,114], candidates:[1830,2468,420,135],
-  exactGate:[1830,2638,420,114], valueCall:[1830,2787,420,114],
-  commit:[1830,2936,420,114], next:[800,3085,680,114],
+  directions:[1830,2000,540,135], directionCall:[1830,2170,540,114],
+  parseDirection:[1830,2319,540,114], candidates:[1830,2468,540,135],
+  exactGate:[1830,2638,540,114], valueCall:[1830,2787,540,114],
+  commit:[1830,2936,540,114], next:[800,3085,680,114],
 };
 const kind = {
   config:'normal', initial:'normal', setup:'normal', preflight:'decision',
@@ -117,24 +117,24 @@ function diagram(lang) {
     edge('M1140 1816 V1851'),edge('M800 1908 H500','branch'),
     edge('M1140 1965 V2000'),edge('M800 2057 H500','branch'),
     edge('M1480 2057 H1830','branch'),
-    edge('M2040 2135 V2170'),edge('M2040 2284 V2319'),
-    edge('M2040 2433 V2468'),edge('M2040 2603 V2638'),
-    edge('M2040 2752 V2787'),edge('M2040 2901 V2936'),
+    edge('M2100 2135 V2170'),edge('M2100 2284 V2319'),
+    edge('M2100 2433 V2468'),edge('M2100 2603 V2638'),
+    edge('M2100 2752 V2787'),edge('M2100 2901 V2936'),
     edge('M1830 2695 H1760 V2993 H1830','bypass'),
     edge('M1830 2068 H1780 V3138 H1480','bypass'),
-    edge('M2250 2993 H2310 V3142 H1480','branch'),
+    edge('M2370 2993 H2460 V3142 H1480','branch'),
     edge('M290 1965 V3060 H740 V3142 H800','branch'),
     edge('M365 2114 V3030 H720 V3110 H800','branch'),
-    edge('M1140 3199 V3223 H2320 V802 H1480','loop'),
+    edge('M1140 3199 V3223 H2470 V802 H1480','loop'),
   ];
   const tags = [
     label(540,1746,t.yes),label(1158,1840,t.no),
     label(540,1895,t.rollbackYes),label(1158,1988,t.no),
     label(540,2045,t.cooldownYes),label(1510,2044,t.ready),
-    label(2060,2768,t.many),label(1510,2773,t.one),
+    label(2120,2768,t.many),label(1510,2773,t.one),
   ];
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2380 3130" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2520 3130" role="img" aria-labelledby="title desc">
   <title id="title">${escapeXml(t.title)}</title>
   <desc id="desc">${escapeXml(t.subtitle)}</desc>
   <defs><marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1 L10 6 L1 11" fill="none" stroke="#626262" stroke-width="1.6"/></marker></defs>
@@ -150,14 +150,14 @@ function diagram(lang) {
     .edge.record,.edge.branch,.edge.bypass,.edge.loop{stroke:#626262}
     .edge-label{fill:#454545;font:700 19px Arial,'Microsoft YaHei',sans-serif}
   </style>
-  <rect width="2380" height="3130" fill="#fff"/>
-  <rect x="12" y="12" width="2356" height="3106" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-dasharray="4 6"/>
-  <rect x="44" y="160" width="2292" height="582" fill="#f5f5f5"/>
-  <rect x="44" y="757" width="2292" height="835" fill="#f7f7f7"/>
-  <rect x="44" y="1607" width="2292" height="1352" fill="#f5f5f5"/>
+  <rect width="2520" height="3130" fill="#fff"/>
+  <rect x="12" y="12" width="2496" height="3106" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-dasharray="4 6"/>
+  <rect x="44" y="160" width="2432" height="582" fill="#f5f5f5"/>
+  <rect x="44" y="757" width="2432" height="835" fill="#f7f7f7"/>
+  <rect x="44" y="1607" width="2432" height="1352" fill="#f5f5f5"/>
   <text x="65" y="75" fill="#292929" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="47" font-weight="700">${escapeXml(t.title)}</text>
   <text x="67" y="120" fill="#555" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="23">${escapeXml(t.subtitle)}</text>
-  <path d="M65 138 H2315" stroke="#a0a0a0" stroke-width="1.5"/>
+  <path d="M65 138 H2455" stroke="#a0a0a0" stroke-width="1.5"/>
   <g transform="translate(0,-120)">
     ${paths.join('\n    ')}
     ${keys.map(key=>node(key,t[key])).join('\n    ')}
