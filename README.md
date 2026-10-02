@@ -88,10 +88,6 @@ Jev-for-llm/
   README.md              Project guide
 ```
 
-The development workspace also has sibling `../tests`, `../scripts` and `../data` directories for controller tests, helper scripts/logs and raw downloads. They are outside this repository and are not a prerequisite for normal runs. A standalone clone may not contain them; its active dataset is the repository-local `data/tasks.jsonl`. Native vLLM interface tests are maintained separately.
-
-The static project website is maintained in the separate `gh-pages` branch, with `index.html` at its root.
-
 ## 3. File formats and configuration
 
 The three configuration files use JSON structure with custom `#` line comments. Strings require double quotes; booleans are `true`/`false`; an absent optional value is `null`. No trailing commas, `//` comments or block comments. A plain `json.load` cannot read these commented files: use `load_config`. VS Code's YAML association only supplies highlighting; ordinary YAML syntax is not accepted.
