@@ -53,7 +53,6 @@ h3 { font-size: 19px; line-height: 1.4; margin: 8px 0; }
 .workflow-frame { overflow-x: auto; border-radius: 18px; background: #091522; }
 .workflow-frame a { display: block; line-height: 0; }
 .workflow-frame img { display: block; width: 100%; height: auto; }
-.workflow-section figcaption { margin-top: 13px; }
 .comparison { margin-top: 65px; padding: 58px 0 63px; background: #f6f7f8; }
 .results-space { min-height: 150px; }
 .resources { padding-bottom: 75px; }
