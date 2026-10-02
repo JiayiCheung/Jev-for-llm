@@ -50,7 +50,7 @@
   <path d="M1725 2993 H1770 V3142 H1240" class="edge branch" marker-end="url(#arrowhead)"/>
   <path d="M275 1965 V3060 H530 V3142 H560" class="edge branch" marker-end="url(#arrowhead)"/>
   <path d="M350 2114 V3030 H500 V3110 H560" class="edge branch" marker-end="url(#arrowhead)"/>
-  <path d="M900 3199 V3223 H1780 V1121 H1240" class="edge loop" marker-end="url(#arrowhead)"/>
+  <path d="M900 3199 V3223 H1780 V802 H1240" class="edge loop" marker-end="url(#arrowhead)"/>
   <g><rect x="560" y="155" width="680" height="108" rx="20" class="node start"/>
     <text x="900" y="190" text-anchor="middle" class="node-title">Run run.py run</text>
     <text x="900" y="225" text-anchor="middle" class="node-detail">cli.main loads tasks and seeds</text><text x="900" y="253" text-anchor="middle" class="node-detail">Jev feedback may update next-round settings</text>
@@ -129,7 +129,7 @@
   </g>
   <g><rect x="1305" y="2000" width="420" height="135" rx="20" class="node emphasis"/>
     <text x="1515" y="2035" text-anchor="middle" class="node-title">Build type-specific actions</text>
-    <text x="1515" y="2070" text-anchor="middle" class="node-detail">Numeric / nullable numeric / boolean / enum</text><text x="1515" y="2098" text-anchor="middle" class="node-detail">String, list, map; offer feasible choices only</text>
+    <text x="1515" y="2070" text-anchor="middle" class="node-detail">Numeric / nullable numeric / boolean / enum</text><text x="1515" y="2098" text-anchor="middle" class="node-detail">Other types; no options means keep</text>
   </g>
   <g><rect x="1305" y="2170" width="420" height="114" rx="20" class="node jev"/>
     <text x="1515" y="2205" text-anchor="middle" class="node-title">Jev call ②: choose actions</text>
@@ -167,5 +167,4 @@
   <text x="1248" y="2044" class="edge-label">ready to adjust</text>
   <text x="1535" y="2768" class="edge-label">multiple values</text>
   <text x="1215" y="2773" class="edge-label">one target / no extra call</text>
-  <text x="1250" y="2130" class="edge-label">no adjustable options: keep</text>
 </svg>

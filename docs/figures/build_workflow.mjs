@@ -25,7 +25,7 @@ const words = {
     restore: ['恢复改动前的参数', '文字不会回退', '下一段才使用恢复后的值'],
     cooldown: ['目前仍在冷却期？', '根据 last_change 与 cooldown_rounds 判断', '冷却时跳过新的 Jev Choice'],
     hold: ['保持当前参数', '本轮不产生新改动', '下一段沿用当前值'],
-    directions: ['按类型生成方向候选', '数值 / 可空数值 / 布尔 / 枚举', '字符串、列表、映射；只给可行选项'],
+    directions: ['按类型生成方向候选', '数值 / 可空数值 / 布尔 / 枚举', '其他类型只给可行项；无候选则保持'],
     directionCall: ['Jev 请求 ②：选择动作', 'direction_request 合并各参数 Choice', '每题附当前值、说明与本轮 Score'],
     parseDirection: ['校验方向 Choice 返回', 'parse_choices 核对选项与概率分布', 'keep 不产生具体值问题'],
     candidates: ['构造合法的具体值', '数值按窗口与步长给 1–3 步', '其他类型使用已审核候选或直接切换'],
@@ -35,7 +35,6 @@ const words = {
     next: ['准备下一轮生成', '复制 decision.parameters；标记 will_execute', '新值在下一轮 generation_request 才实际生效'],
     no: '否', yes: '是', rollbackYes: '需要回退', cooldownYes: '冷却中',
     ready: '可调整', one: '单一目标 / 无需再问', many: '多个候选',
-    noOptions: '无可调候选：保持',
   },
   en: {
     title: 'One run: Jev-guided segmented inference', subtitle: 'From initial parameters to the next segment · one task and seed',
@@ -58,7 +57,7 @@ const words = {
     restore: ['Restore prior parameters', 'Generated text remains unchanged', 'Restored values apply next segment'],
     cooldown: ['Still in the cooldown period?', 'Check last_change and cooldown_rounds', 'Skip new Jev Choices while cooling down'],
     hold: ['Keep current parameters', 'No new change this round', 'Reuse current values next segment'],
-    directions: ['Build type-specific actions', 'Numeric / nullable numeric / boolean / enum', 'String, list, map; offer feasible choices only'],
+    directions: ['Build type-specific actions', 'Numeric / nullable numeric / boolean / enum', 'Other types; no options means keep'],
     directionCall: ['Jev call ②: choose actions', 'direction_request groups parameter Choices', 'Each includes current value, meaning, and Scores'],
     parseDirection: ['Validate direction Choices', 'parse_choices checks options and probabilities', 'keep needs no exact-value question'],
     candidates: ['Generate legal exact values', 'Numeric: one to three bounded steps', 'Other types: reviewed candidates or direct switch'],
@@ -68,7 +67,6 @@ const words = {
     next: ['Prepare the next round', 'Copy decision.parameters; set will_execute', 'New values reach the next generation_request'],
     no: 'No', yes: 'Yes', rollbackYes: 'rollback', cooldownYes: 'cooldown',
     ready: 'ready to adjust', one: 'one target / no extra call', many: 'multiple values',
-    noOptions: 'no adjustable options: keep',
   },
 };
 
@@ -129,14 +127,13 @@ function diagram(lang) {
     edge('M1725 2993 H1770 V3142 H1240','branch'),
     edge('M275 1965 V3060 H530 V3142 H560','branch'),
     edge('M350 2114 V3030 H500 V3110 H560','branch'),
-    edge('M900 3199 V3223 H1780 V1121 H1240','loop'),
+    edge('M900 3199 V3223 H1780 V802 H1240','loop'),
   ];
   const tags = [
     label(505,1746,t.yes),label(918,1840,t.no),
     label(505,1895,t.rollbackYes),label(918,1988,t.no),
     label(505,2045,t.cooldownYes),label(1248,2044,t.ready),
     label(1535,2768,t.many),label(1215,2773,t.one),
-    label(1250,2130,t.noOptions),
   ];
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 3250" role="img" aria-labelledby="title desc">
