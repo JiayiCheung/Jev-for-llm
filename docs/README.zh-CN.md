@@ -33,29 +33,17 @@ cd Jev-for-llm
 
 ### 1.2 安装 GPU 推理后端
 
-根据平台选择**一条路线**。本仓库不包含模型权重，其包元数据也不会自动安装 vLLM。
-
-**Linux / WSL2 + NVIDIA GPU：**在 Linux 环境内安装上游默认 wheel 及配套依赖：
-
-```shell
-python -m pip install vllm
-python -m pip check
-```
-
-这是默认 wheel 安装路线，不是固定版本的环境锁。安装前按[官方 GPU 安装要求](https://docs.vllm.ai/en/latest/getting_started/installation/gpu/)检查 Python、GPU 和驱动；其他 CUDA/PyTorch 组合可能需要选择不同构建。WSL 命令在 Linux 内执行，不是在 Windows Conda 环境执行。
-
-**原生 Windows：**阅读 [Windows 社区安装说明](https://github.com/SystemPanic/vllm-windows#installing-an-existing-release-wheel)，从[发布页](https://github.com/SystemPanic/vllm-windows/releases)下载与其声明的 Python、PyTorch、CUDA 要求匹配的 wheel，然后将下面文件名替换为实际下载文件：
+本仓库不包含模型权重，其包元数据也不会自动安装 vLLM。在 Windows 上，阅读 [Windows 社区安装说明](https://github.com/SystemPanic/vllm-windows#installing-an-existing-release-wheel)，从[发布页](https://github.com/SystemPanic/vllm-windows/releases)下载与其声明的 Python、PyTorch、CUDA 要求匹配的 wheel，然后将下面文件名替换为实际下载文件：
 
 ```powershell
 python -m pip install "C:/Downloads/ACTUAL_RELEASE_WHEEL.whl"
-python -m pip check
 ```
 
 上述文件名是占位符，不是真实发布文件，不存在适合所有 Windows 环境的一条固定 wheel 命令。本实现曾使用 Python 3.12、Windows vLLM 0.29.0 构建验证，新环境仍需独立检查。
 
-两条路线安装后都检查解释器与 GPU：
+安装后检查解释器与 GPU：
 
-```shell
+```powershell
 python -c "import sys, torch, vllm; print(sys.executable); print(vllm.__version__); print(torch.__version__); print(torch.version.cuda); print(torch.cuda.is_available())"
 ```
 

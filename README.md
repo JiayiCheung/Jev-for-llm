@@ -33,29 +33,17 @@ All commands below run from this repository root, where `run.py` is located. The
 
 ### 1.2 Install the GPU inference backend
 
-Choose **one** platform route. This project does not bundle model weights or install vLLM through its package metadata.
-
-**Linux / WSL2 with NVIDIA GPU:** inside the Linux environment, install the upstream wheel and its matching dependencies:
-
-```shell
-python -m pip install vllm
-python -m pip check
-```
-
-This is the upstream default-wheel route, not an environment lock. Check the [official GPU installation requirements](https://docs.vllm.ai/en/latest/getting_started/installation/gpu/) against your Python, GPU and driver before installation. A different CUDA/PyTorch combination may need a different upstream build. WSL commands run inside Linux, not in a Windows Conda environment.
-
-**Native Windows:** use the [Windows community build instructions](https://github.com/SystemPanic/vllm-windows#installing-an-existing-release-wheel), select a [release wheel](https://github.com/SystemPanic/vllm-windows/releases) matching its stated Python, PyTorch and CUDA requirements, and download it. Then replace the example filename with the actual downloaded file:
+This project does not bundle model weights or install vLLM through its package metadata. On Windows, use the [Windows community build instructions](https://github.com/SystemPanic/vllm-windows#installing-an-existing-release-wheel), select a [release wheel](https://github.com/SystemPanic/vllm-windows/releases) matching its stated Python, PyTorch and CUDA requirements, and download it. Then replace the example filename with the actual downloaded file:
 
 ```powershell
 python -m pip install "C:/Downloads/ACTUAL_RELEASE_WHEEL.whl"
-python -m pip check
 ```
 
 The filename is a placeholder, not a release artifact. There is no single wheel command suitable for every Windows environment. The project was exercised with Python 3.12 and a Windows vLLM 0.29.0 build; a fresh installation must be checked independently.
 
-For either route, verify the selected interpreter and GPU visibility:
+Verify the selected interpreter and GPU visibility:
 
-```shell
+```powershell
 python -c "import sys, torch, vllm; print(sys.executable); print(vllm.__version__); print(torch.__version__); print(torch.version.cuda); print(torch.cuda.is_available())"
 ```
 
