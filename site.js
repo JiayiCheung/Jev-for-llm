@@ -62,7 +62,7 @@ function render(language) {
     link.href = `https://github.com/JiayiCheung/Jev-for-llm/blob/main/${paths[link.dataset.doc]}`;
   });
   const workflowImage = document.querySelector("[data-workflow-image]");
-  const workflowPath = `workflow_${language}.svg?v=5`;
+  const workflowPath = `workflow_${language}.svg?v=6`;
   workflowImage.src = workflowPath;
   workflowImage.alt = strings.workflowAlt;
   document.querySelector("[data-workflow-link]").href = workflowPath;

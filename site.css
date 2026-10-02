@@ -50,7 +50,7 @@ h3 { font-size: 19px; line-height: 1.4; margin: 8px 0; }
 .method-points p { font-size: 15px; line-height: 1.65; margin: 0; }
 .workflow-section { padding: 68px 0 0; }
 .workflow-width { width: min(100% - 44px, 1200px); margin-inline: auto; }
-.workflow-frame { overflow-x: auto; border-radius: 18px; background: #091522; }
+.workflow-frame { overflow-x: auto; border: 1px solid #d5d5d5; background: #fff; }
 .workflow-frame a { display: block; line-height: 0; }
 .workflow-frame img { display: block; width: 100%; height: auto; }
 .comparison { margin-top: 65px; padding: 58px 0 63px; background: #f6f7f8; }
