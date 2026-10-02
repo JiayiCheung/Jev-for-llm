@@ -11,8 +11,7 @@ Qwen generates text locally through the Python vLLM API. Jev evaluates each segm
 - [File formats and configuration](#3-file-formats-and-configuration)
 - [Run modes](#4-run-modes)
 - [First run and results](#5-first-run-and-results)
-- [Troubleshooting](#6-troubleshooting)
-- [Interpretation limits](#7-interpretation-limits-and-further-reading)
+- [Interpretation limits](#6-interpretation-limits-and-further-reading)
 
 ## 1. Environment and installation
 
@@ -258,23 +257,10 @@ python run.py compare 2>&1 | Tee-Object -FilePath outputs/compare.log
 
 This PowerShell example saves a console log inside the configured checkout. Logs may contain task/model output. Results, not only console messages, are the experiment record.
 
-## 6. Troubleshooting
-
-| Symptom | What to check |
-|---|---|
-| Key prompt still appears | An old process/code version is running. Stop it and relaunch the updated code; current authentication reads jev.api_key only. |
-| HTTP 401/403 | Key validity and organization access |
-| Billing/out-of-funds response | TypeSafe organization balance |
-| Timeout/TLS error | Network, proxy and timeout settings; no automatic retry |
-| Cannot import vllm | Selected Python environment and installed wheel |
-| GPU out of memory | Other GPU jobs, context length and engine memory settings |
-| min_tokens error after adding that field | It must fit the actual remaining segment budget; smoke only allocates eight tokens |
-| Budget reached without final answer | Inspect thinking output and increase budgets deliberately if needed |
-
-## 7. Interpretation limits and further reading
+## 6. Interpretation limits and further reading
 
 Each segment is a separate generate call; earlier tokens become prompt context. Presence/frequency penalties apply to newly generated tokens within that call, while repetition penalty also considers prompt tokens. Stop matching across segment boundaries is not guaranteed. Parameters change between calls, not during an active call. Prefix caching may help but does not make segmented generation identical to continuous generation.
 
 Jev and each `answer.txt` snapshot use cumulative raw decoding, potentially including special tokens and stop content; display options affect native display text. Seed is incremented by segment index. Fixed/adaptive comparisons share starting values and budgets, but that does not guarantee identical random trajectories or improved accuracy.
 
-See [implementation notes](docs/implementation.md), [Transformers migration](docs/transformers_to_vllm.md), and the [GSM8K source](https://github.com/openai/grade-school-math). Use an independent answer grader before making benchmark accuracy claims.
+See [implementation notes](docs/implementation.md) and the [GSM8K source](https://github.com/openai/grade-school-math). Use an independent answer grader before making benchmark accuracy claims.

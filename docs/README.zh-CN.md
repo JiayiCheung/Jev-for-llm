@@ -11,8 +11,7 @@ Qwen 通过 **Python vLLM 接口在本地生成**；Jev 对每段输出做四个
 - [3. 文件格式与配置](#3-文件格式与配置)
 - [4. 运行方式](#4-运行方式)
 - [5. 首次运行与结果解读](#5-首次运行与结果解读)
-- [6. 故障排查](#6-故障排查)
-- [7. 实验边界与延伸阅读](#7-实验边界与延伸阅读)
+- [6. 实验边界与延伸阅读](#6-实验边界与延伸阅读)
 
 ## 1. 环境与安装
 
@@ -279,23 +278,10 @@ python run.py compare 2>&1 | Tee-Object -FilePath outputs/compare.log
 
 此 PowerShell 示例将控制台日志保存在仓库的 outputs 目录。日志可能含题目和生成内容，完整实验依据应以保存结果为准。
 
-## 6. 故障排查
-
-| 现象 | 检查方向 |
-|---|---|
-| 仍提示输入密钥 | 旧进程或旧代码；停止后使用更新后的代码重启，当前只读 jev.api_key |
-| HTTP 401/403 | 密钥是否有效、组织权限是否正常 |
-| Billing / out of funds | TypeSafe 组织余额 |
-| 超时或 TLS 错误 | 网络、代理、超时设置；当前不自动重试 |
-| 无法 import vllm | 当前解释器环境与所安装 wheel |
-| 显存不足 | 其他 GPU 进程、上下文长度、引擎显存设置 |
-| 自行新增 min_tokens 后报错 | 是否超过当轮实际剩余预算；smoke 只分配 8 个 token |
-| 预算用完仍无最终答案 | 检查 thinking 输出，按需要有意识地提高预算 |
-
-## 7. 实验边界与延伸阅读
+## 6. 实验边界与延伸阅读
 
 每段都是独立的 generate 调用，历史 token 作为下一段提示词。presence/frequency penalty 的计数针对本次调用新生成 token；repetition penalty 还考虑提示词。跨片段的停止字符串匹配不作保证。参数在调用之间改变，不是在正在执行的生成内部热修改。前缀缓存可能减少重复计算，但不会使分段生成等同于一次连续生成。
 
 Jev 和 `answer.txt` 的各轮快照使用累积 token 的原始解码，可能保留特殊 token 和停止内容；显示参数作用于原生显示文本。每段使用 `seed + step`。fixed/adaptive 共享初始值和预算，不保证随机轨迹相同，也不保证准确率提高。
 
-更多信息见[实现说明](implementation.zh-CN.md)、[Transformers 迁移说明](transformers_to_vllm.zh-CN.md)和 [GSM8K 来源](https://github.com/openai/grade-school-math)。报告 benchmark 正确率前，应增加独立的答案判分器。
+更多信息见[实现说明](implementation.zh-CN.md)和 [GSM8K 来源](https://github.com/openai/grade-school-math)。报告 benchmark 正确率前，应增加独立的答案判分器。
