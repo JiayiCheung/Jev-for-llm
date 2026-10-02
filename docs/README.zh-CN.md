@@ -151,10 +151,6 @@ Jev-for-llm/
 
 列表可用 `items` 约束元素；对象可用 `properties`、`required`、`additional_properties` 约束内容。布尔参数只有保持或切换；枚举只能选声明的 `choices`；字符串、列表、映射必须先在 `control.candidates` 或 `control.entries` 中填写核实过的内容，程序才会提供设置、增删等动作。
 
-旧版 `adjustments` 固定触发规则与参数级 `enabled` 已不再接受。写进列表即参与实验；要排除就删掉该项。`initial: null` 表示该参数当前值未启用，并不排除这个条目。`control.adaptive: false` 可把观测参数固定在初值，但它仍会传入 vLLM。
-
-当前选择 20 个代表字段：数值型 `temperature`、`top_p`、`top_k`、`repetition_penalty`、`frequency_penalty`、`presence_penalty`、`min_p`；布尔型 `ignore_eos`、`detokenize`、`skip_special_tokens`、`spaces_between_special_tokens`、`include_stop_str_in_output`、`flat_logprobs`；可空列表 `stop_token_ids`、`allowed_token_ids`；可空映射 `logit_bias`；枚举 `output_kind`；可空整数 `logprobs`、`prompt_logprobs`；整数 `min_tokens`。可空整数先从核实过的候选中选择启用起点，已有数值后再按窗口步长增加、减少或回到 `null`。按当前初值，17 项能产生实际可选的方向 Choice；只有 3 个依赖 token ID 的字段要先填入核实过的候选，暂时只能保持。输出呈现和日志概率字段虽可切换，但这种切换本身不代表答案质量提高。`seed`、`max_tokens` 与单候选输出由运行器管理。
-
 各类代表参数及候选内容规则见[参数示例教程](parameter_examples.zh-CN.md)。[严格 JSON 示例](parameter_examples.json)是当前选择去除注释后的副本。
 
 更完整的 vLLM 范围见 [1,181 项清单分类](vllm_catalog_taxonomy.zh-CN.md)及其[逐条 CSV](vllm_catalog_taxonomy.csv)。这份清单区分了当前 Python 控制项与其他接口，并不代表所有项目已经通过运行验证。
