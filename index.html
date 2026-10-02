@@ -40,7 +40,7 @@
         <div class="teaser-frame">
           <div class="teaser-column">
             <span class="figure-label" data-i18n="modelLabel">生成模型</span>
-            <strong>Qwen + vLLM</strong>
+            <strong>Qwen</strong>
             <p data-i18n="modelText">按当前参数生成一个片段</p>
           </div>
           <div class="teaser-arrow" aria-hidden="true">→</div>
@@ -55,6 +55,18 @@
             <strong data-i18n="nextTitle">更新采样参数</strong>
             <p data-i18n="nextText">仅对选中的参数应用合法值</p>
           </div>
+        </div>
+        <div class="feedback-flow">
+          <svg class="feedback-path" viewBox="0 0 880 92" preserveAspectRatio="none" aria-hidden="true">
+            <defs><marker id="feedback-arrowhead" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto"><path d="M 1 1 L 7 4.5 L 1 8" fill="none" stroke="currentColor" stroke-width="1.5"/></marker></defs>
+            <path d="M 744 0 V 48 H 496 M 384 48 H 136 V 0" fill="none" stroke="currentColor" stroke-width="2" marker-end="url(#feedback-arrowhead)"/>
+          </svg>
+          <div class="feedback-engine">
+            <span class="figure-label" data-i18n="engineLabel">推理框架</span>
+            <strong>vLLM</strong>
+            <span data-i18n="engineText">按新参数运行 Qwen</span>
+          </div>
+          <p class="feedback-mobile" data-i18n="feedbackMobile">↰ 返回 Qwen，生成下一段</p>
         </div>
         <figcaption data-i18n="teaserCaption">方法概览。Jev 不生成答案；它评价本段文本，并在允许的参数范围内辅助下一段生成。固定参数组只记录评分。</figcaption>
       </figure>
