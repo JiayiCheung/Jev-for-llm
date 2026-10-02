@@ -9,11 +9,10 @@ Qwen 通过 **Python vLLM 接口在本地生成**；Jev 对每段输出做四个
 - [1. 环境与安装](#1-环境与安装)
 - [2. 目录与文件职责](#2-目录与文件职责)
 - [3. 文件格式与配置](#3-文件格式与配置)
-- [4. 函数调用与决策流程](#4-函数调用与决策流程)
-- [5. 运行方式](#5-运行方式)
-- [6. 首次运行与结果解读](#6-首次运行与结果解读)
-- [7. 故障排查](#7-故障排查)
-- [8. 实验边界与延伸阅读](#8-实验边界与延伸阅读)
+- [4. 运行方式](#4-运行方式)
+- [5. 首次运行与结果解读](#5-首次运行与结果解读)
+- [6. 故障排查](#6-故障排查)
+- [7. 实验边界与延伸阅读](#7-实验边界与延伸阅读)
 
 ## 1. 环境与安装
 
@@ -158,37 +157,7 @@ Jev-for-llm/
 
 `id` 必须是唯一非空字符串，`prompt` 必须是非空字符串。参考答案是可选元数据，不发送给 Qwen/Jev。仓库附带的样本是 GSM8K **训练集**英文原题，使用随机种子 42 无放回抽取 10 道；抽样记录在 `data/gsm8k_sample_manifest.json`。这不是完整的独立测试集评测，当前也没有自动比对标准答案的判分器。
 
-## 4. 函数调用与决策流程
-
-| 模块 | 职责 |
-|---|---|
-| run.py / cli.py | 解析命令、选择模式、建立共享客户端、遍历题目和种子 |
-| config.py | 去除注释、解析路径、加载参数和评分标准、检查配置 |
-| parameters.py / value_schema.py | 初值与类型校验、映射原生参数名 |
-| backend.py | 保持模型加载，分词、生成、解码 |
-| runner.py | 分段循环、预算、评价调用、增量保存记录 |
-| jev_requests.py | 分别构造 Score、方向 Choice、具体值 Choice 的 JSON |
-| adapters.py | 校验 Score、归一化并清理不使用的返回字段 |
-| clients.py | 发送带认证的 HTTPS 请求 |
-| policy.py | 评分停止、冷却、回退和提交 Jev 已选的参数 |
-
-
-对一道题、一个种子、一种模式，实际调用顺序如下：
-
-1. **读取定义并映射初值。**`config.load_config` 读取 `parameters.json` 和 `jev_questions.json`。`parameters.initial_parameters` 从列出的每项取 `name` 与 `initial`，组成普通的内存映射 `sampling`；`type`、`description`、边界和 `control` 仍留在定义中，供校验和后续 Choice 使用。每次独立实验复制这张初始映射。程序不单独写出“初始映射文件”，后续改参也不改写文件里的 `initial`。
-2. **用初值生成第一段。**`runner.execute` 将题目文件中的 `prompt` 套用模型聊天模板，得到提示词 token ID；`add_generation_prompt` 只添加助手开始回答的标记，不会另造一道题。每轮生成请求包含这些 token 加此前已生成的 token、按 `api_name` 转换后的当前参数、由剩余预算限制的本段 `max_tokens`，以及 `seed + step`。调用前在 `result.json` 记 `rounds[].applied_parameters`、`generation_request`；成功返回后记 `generation_response` 和耗时。第一段生成前，Jev 尚未改过参数。
-3. **给新文字评分。**新 token 接到累计输出后，`jev_requests.score_request` 发送四项 Score，`state={task, generated, recent, step}` 分别是原题、累计全文、最新片段和轮次；不发送参考答案或剩余 token 预算。调用前保存 `evaluation_request`，返回后保存 `evaluation_response` 与耗时。`adapters.parse_scores` 要求分数处于量表范围且有限、概率键覆盖每一档、概率之和与 1 的偏差不超过 0.02；再按当前五档量表把原始 0～4 分映射为 `normalized=score/4`，例如 3 分变 0.75。概率分布会保存、校验；控制器使用归一化分数，不使用额外的 confidence。整理结果在 `rounds[].scores`。
-4. **判断是否允许调参。**`policy.Controller.decide` 将四项归一化分数合成 `utility`，计算时把重复性反向处理，因为重复越少越好。fixed 模式保持原参数；adaptive 先检查上次改参是否应回退，再检查可选的评分停止和冷却。运行器还检查模型是否停止，以及 token、上下文、轮数、Jev 调用预算。只有还能继续且得到 `reason: choice_ready`，才进入参数 Choice。这一步只是本地判断，不会改变刚完成的生成。
-5. **生成并发送方向 Choice。**`jev_requests.direction_request` 逐项读取类型和当前值，建立合法动作。例如 `temperature=0.6` 是 `keep/increase/decrease`，`ignore_eos=false` 是 `keep/turn_on`，`logprobs=null` 是 `keep/enable`。若某项只有 `keep`，就不建问题；按目前初值，20 项中有 17 项形成问题，另 3 项缺少核实过的 token ID 候选。这 17 道题放进**同一次 Jev 请求**，共享原题、生成文字、四项归一化分数和全部当前参数；每题另带该参数的 `description` 与当前值。请求和答复保存为 `direction_request`、`direction_response`。这里是逐参数选择动作，代码没有对整组改动做联合优化。
-6. **把方向映射为具体值。**选 `keep` 不改值；`turn_on` 之类只有一个结果的动作直接映射为 `true`。数值增减由 `jev_requests.value_candidates` 按 `control.window` 跨度除以 `denominator` 算步长，展示 1、2、3 步，并剔除越过窗口或硬边界的值。例如 `temperature=0.6`、窗口 `[0,2]`、分母 20，增加得到 `0.7/0.8/0.9`；`top_k=20`、窗口 `[1,101]`、分母 20，增加得到 `25/30/35`。`logprobs=null` 若选启用，先从声明的 `0/1/2` 中选起点，已有整数后才能按步长增减。多个具体候选的参数被合并到**一次额外的 Jev 请求**，记录为 `value_request`、`value_response`、`value_seconds`；返回的 `v1/v2/v3` 再映射回实际值。请求附带当前参数和各题自身的方向，但共同 `state` 没有汇总其他参数刚选的方向。
-7. **提交给下一段。**`Controller.commit` 复制完整的当前参数映射，再用选中的 `changes` 覆盖对应项。没有实质变化就保持；有变化则在 `rounds[].decision` 写入 `action: adjust`、完整的下一段参数及改前综合分，以备反馈比较。运行器把新映射复制给下一轮。`decision_will_execute: true` 只表示打算继续；须看下一轮的 `applied_parameters`、`generation_request`，才能知道新值被提交给 vLLM，再看 `generation_response` 才能确认该次生成完成。下一轮开始前也可能先被预算拦住。
-8. **保存各轮答案并检查效果。**程序持续更新 `result.json`；每轮的 `answer_snapshot` 和 `answer.txt` 中带轮次标题的段落保存该轮结束时的累计答案，最后一段是完整最终答案。下一轮评分后，控制器把新的 `utility` 与改参前的值比较；若下降超过 `policy.rollback.score_drop`，会提议在后续轮次恢复旧参数，但不会抹掉已经生成的文字。旧版“低正确性／高重复性就固定调整”的触发规则已删除。
-
-评分提前停止仍由 `policy.stopping` 中的 0～1 归一化门槛控制，当前 `enabled: false`，所以这些门槛不触发停止。
-
-综合质量分取值为 0～1。当前五档评分与默认权重下，计算为 `0.45*(correctness/4) + 0.30*(relevance/4) + 0.15*(completeness/4) + 0.10*(1-repetition/4)`。`utility_weights` 全部填写非负数（0～1，至少一项大于零），代码自动除以权重之和；评分档数变化时会按对应满分归一化。`policy.rollback.score_drop: 0.15` 表示调整后综合分下降超过 0.15 就恢复原参数，不是下降 15%。这保留了原来的默认回退敏感度。回退不删除已生成文本，也不能证明因果关系。旧结果的效用数值采用旧尺度，不能与新结果直接比较。
-
-## 5. 运行方式
+## 4. 运行方式
 
 在包含 `run.py` 的目录中由使用者自行执行：
 
@@ -324,7 +293,7 @@ python run.py compare
 
 10 道题、1 个种子，最多生成 20 个实验目录，8 轮时最多 320 次请求，还受各次运行的 `max_jev_calls` 限制。两组初值与预算一致，但 EOS 与预算停止仍有效，所以实际长度可能不同。分别查看 result.json 和 answer.txt；比较正确率仍需要独立标准答案判分器。
 
-## 6. 首次运行与结果解读
+## 5. 首次运行与结果解读
 
 1. 修改路径、`jev.api_key` 和题目文件。
 2. 依次执行 `check`、`doctor`、`smoke`。
@@ -356,7 +325,7 @@ python run.py compare 2>&1 | Tee-Object -FilePath outputs/compare.log
 
 此 PowerShell 示例将控制台日志保存在仓库的 outputs 目录。日志可能含题目和生成内容，完整实验依据应以保存结果为准。
 
-## 7. 故障排查
+## 6. 故障排查
 
 | 现象 | 检查方向 |
 |---|---|
@@ -369,7 +338,7 @@ python run.py compare 2>&1 | Tee-Object -FilePath outputs/compare.log
 | 自行新增 min_tokens 后报错 | 是否超过当轮实际剩余预算；smoke 只分配 8 个 token |
 | 预算用完仍无最终答案 | 检查 thinking 输出，按需要有意识地提高预算 |
 
-## 8. 实验边界与延伸阅读
+## 7. 实验边界与延伸阅读
 
 每段都是独立的 generate 调用，历史 token 作为下一段提示词。presence/frequency penalty 的计数针对本次调用新生成 token；repetition penalty 还考虑提示词。跨片段的停止字符串匹配不作保证。参数在调用之间改变，不是在正在执行的生成内部热修改。前缀缓存可能减少重复计算，但不会使分段生成等同于一次连续生成。
 

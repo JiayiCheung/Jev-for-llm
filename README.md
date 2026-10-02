@@ -9,11 +9,10 @@ Qwen generates text locally through the Python vLLM API. Jev evaluates each segm
 - [Environment and installation](#1-environment-and-installation)
 - [Layout and ownership](#2-layout-and-ownership)
 - [File formats and configuration](#3-file-formats-and-configuration)
-- [Call flow and decision rules](#4-call-flow-and-decision-rules)
-- [Run modes](#5-run-modes)
-- [First run and results](#6-first-run-and-results)
-- [Troubleshooting](#7-troubleshooting)
-- [Interpretation limits](#8-interpretation-limits-and-further-reading)
+- [Run modes](#4-run-modes)
+- [First run and results](#5-first-run-and-results)
+- [Troubleshooting](#6-troubleshooting)
+- [Interpretation limits](#7-interpretation-limits-and-further-reading)
 
 ## 1. Environment and installation
 
@@ -149,36 +148,7 @@ Tasks belong in `data/tasks.jsonl`, not in the rubric file. JSONL is strict JSON
 
 Unique nonempty `id` and `prompt` are required. Reference fields are optional metadata and are not sent to Qwen/Jev. The included sample contains ten original English GSM8K **training** questions sampled without replacement using seed 42; provenance is in `data/gsm8k_sample_manifest.json`. It is not a full held-out benchmark. No automatic reference-answer grader is implemented.
 
-## 4. Call flow and decision rules
-
-| Module | Responsibility |
-|---|---|
-| run.py / cli.py | Parse commands, select modes, construct shared clients and iterate tasks/seeds |
-| config.py | Strip comments, resolve paths, load definitions/rubrics and validate configuration |
-| parameters.py / value_schema.py | Validate definitions and map names to native keywords |
-| backend.py | Keep one LLM loaded, tokenize, generate and decode |
-| runner.py | Segment loop, budgets, evaluation calls and incremental records |
-| jev_requests.py | Build typed Score, direction Choice and exact-value Choice JSON requests |
-| adapters.py | Validate scores and remove unused response metadata |
-| clients.py | Authenticated HTTPS request to Jev |
-| policy.py | Score stopping, cooldown, rollback and accepted-choice commit |
-
-For one task, seed, and mode, the flow is:
-
-1. **Load definitions and initial values.** `config.load_config` loads `parameters.json` and `jev_questions.json`. `parameters.initial_parameters` maps every listed `name` to its `initial` value, producing one plain in-memory `sampling` map; definitions such as `type`, `description`, bounds, and `control` remain available separately. The map is copied at the start of each run. It is not written as a standalone file, and the original `initial` values are not changed by later decisions.
-2. **Generate the first segment with vLLM.** `runner.execute` applies the model's chat template to the task's `prompt`, yielding prompt token IDs; `add_generation_prompt` adds the assistant-start marker, not another question. Each generation request contains those token IDs plus all previously generated IDs, the current parameter map translated from `name` to native `api_name`, a segment `max_tokens` limited by the remaining budgets, and `seed + step`. Before generation, `result.json` records `rounds[].applied_parameters` and `generation_request`; after success, it records `generation_response` and timing. Jev has not changed any parameters before the first segment.
-3. **Score the new text.** The new token IDs extend the cumulative output. `jev_requests.score_request` sends the four rubrics with `state={task, generated, recent, step}`. Neither the reference answer nor the remaining token budget is sent. `evaluation_request` is saved before the Jev call; `evaluation_response` and elapsed time are saved after it. `adapters.parse_scores` requires a finite score within the rubric range and probabilities for every level that sum to 1 within 0.02. It then maps each raw 0–4 score to `normalized = score / 4` under the current five-level rubrics. The probabilities are retained and validated, but the controller uses the normalized scores rather than a separate confidence value. The parsed values appear in `rounds[].scores`.
-4. **Decide whether a parameter Choice is allowed.** `policy.Controller.decide` combines the four normalized scores into `utility`, reversing repetition so that less repetition is better. Fixed mode holds the parameters. Adaptive mode first checks feedback from the last change for rollback, then optional score stopping and cooldown. The runner also checks model stop and token, context, round, and Jev-call budgets. Only a continuing round with `reason: choice_ready` proceeds to parameter Choice. This local decision does not itself alter the current segment.
-5. **Ask for directions.** `jev_requests.direction_request` reads each definition's type and current value to generate feasible operations: for example, `temperature=0.6` offers keep/increase/decrease, `ignore_eos=false` offers keep/turn_on, and `logprobs=null` offers keep/enable. A parameter with only keep is omitted as a question. With the current definitions and initial values, 17 of 20 parameters get questions; the other three token-ID controls lack reviewed candidates. All direction questions share one Jev request whose state includes the task, text, four normalized scores, and the full current parameter map. Each question also includes the parameter's `description` and current value. The request and answer are saved as `direction_request` and `direction_response`. This is one Choice question per eligible parameter; the implementation does not jointly optimize the complete combination of changes.
-6. **Map directions to exact values.** A chosen keep produces no change. A single-result action such as `turn_on` maps directly to `true`. For a numeric increase or decrease, `jev_requests.value_candidates` computes one-, two-, and three-step values from `control.window` and `control.denominator`, discarding values outside the window or hard bounds. Thus `temperature=0.6`, window `[0,2]`, denominator `20`, and increase yield `0.7`, `0.8`, `0.9`; `top_k=20` with `[1,101]` and denominator `20` yields `25`, `30`, `35`. Enabling nullable `logprobs` offers the declared starting values `0`, `1`, `2`; after it has a number, it uses bounded steps. Parameters with multiple exact candidates are grouped into one further Jev request, logged as `value_request`, `value_response`, and `value_seconds`. The answer's `v1`/`v2`/`v3` keys are mapped back to actual values. This request carries the current map and each question's own chosen direction, but does not summarize other parameters' selected directions in shared state.
-7. **Commit for the next segment.** `Controller.commit` copies the full current map and overlays the chosen `changes`. With no effective changes it holds; otherwise `rounds[].decision` records `action: adjust`, the complete proposed next map, and the pre-change utility used for later feedback. The runner copies that map into `params` for the next loop iteration. `decision_will_execute: true` means continuation is planned, not that generation succeeded. Only the next round's `applied_parameters` and `generation_request` show values submitted to vLLM; its `generation_response` confirms that call completed. A budget check can still stop the run before that next request.
-8. **Save answers and evaluate the change.** `result.json` is updated throughout the run; `rounds[].answer_snapshot` and the labeled sections in `answer.txt` preserve the cumulative answer after each generated segment. The last section is the final full answer. After the next segment is scored, the controller compares its utility with the pre-change utility. A drop beyond `policy.rollback.score_drop` proposes restoring the old parameter map for a later segment; it cannot undo text already generated. There are no automatic low-correctness or high-repetition adjustment triggers.
-
-Early stopping remains under `policy.stopping`: `enabled: false`, `completeness_min: 1.0`, `correctness_min: 0.75`, and `relevance_min: 0.75`. All three normalized minimums must be met when enabled. Activate the required Python environment; no interpreter path or backend selector belongs in the configuration.
-
-Composite quality is on a 0-1 scale. With the current five-level rubrics and default weights: `0.45*(correctness/4) + 0.30*(relevance/4) + 0.15*(completeness/4) + 0.10*(1-repetition/4)`. All `utility_weights` are nonnegative (0-1), with at least one positive; code divides by their sum. Other rubric sizes use their own maximum for normalization. `policy.rollback.score_drop: 0.15` restores the previous parameters when quality drops by more than 0.15 points after an adjustment, not by 15%. This preserves the previous default rollback sensitivity. Rollback does not erase generated text or prove causality. Historical output utility values use the old scale and must not be directly compared with new values.
-
-## 5. Run modes
+## 4. Run modes
 
 Run these commands yourself from the directory containing `run.py`:
 
@@ -304,7 +274,7 @@ python run.py compare
 
 Ten tasks and one seed produce up to 20 experiment folders and at most 320 requests at eight rounds, subject to each run's `max_jev_calls`. Both groups share starting values and budgets. Score-based stopping is disabled, but EOS and budget limits still apply. Read each group's result.json and answer.txt; an independent reference-answer grader is still needed for accuracy comparison.
 
-## 6. First run and results
+## 5. First run and results
 
 1. Edit paths, direct API key and input tasks.
 2. Run `check`, then `doctor`, then `smoke`.
@@ -334,7 +304,7 @@ python run.py compare 2>&1 | Tee-Object -FilePath outputs/compare.log
 
 This PowerShell example saves a console log inside the configured checkout. Logs may contain task/model output. Results, not only console messages, are the experiment record.
 
-## 7. Troubleshooting
+## 6. Troubleshooting
 
 | Symptom | What to check |
 |---|---|
@@ -347,7 +317,7 @@ This PowerShell example saves a console log inside the configured checkout. Logs
 | min_tokens error after adding that field | It must fit the actual remaining segment budget; smoke only allocates eight tokens |
 | Budget reached without final answer | Inspect thinking output and increase budgets deliberately if needed |
 
-## 8. Interpretation limits and further reading
+## 7. Interpretation limits and further reading
 
 Each segment is a separate generate call; earlier tokens become prompt context. Presence/frequency penalties apply to newly generated tokens within that call, while repetition penalty also considers prompt tokens. Stop matching across segment boundaries is not guaranteed. Parameters change between calls, not during an active call. Prefix caching may help but does not make segmented generation identical to continuous generation.
 
