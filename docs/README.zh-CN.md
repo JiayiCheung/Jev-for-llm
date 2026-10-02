@@ -57,7 +57,7 @@ python -m pip install huggingface_hub
 hf download Qwen/Qwen3-0.6B --local-dir models/Qwen3-0.6B
 ```
 
-[Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/guides/cli) 下载权重、分词器和配置。已有完整模型目录可跳过下载，直接配置路径。`pyproject.toml` 描述 Python 包，不是 GPU 依赖锁文件；可编辑安装使包可导入，`run.py` 也支持直接从仓库运行。
+[Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/guides/cli) 下载权重、分词器和配置。已有完整模型目录可跳过下载，直接配置路径。可编辑安装使包可导入，`run.py` 也支持直接从仓库运行。
 
 ### 1.4 修改本机路径和评价器配置
 
@@ -83,7 +83,6 @@ Jev-for-llm/
   jev_questions.json     四个评分维度的英文指令与等级标准
   pyproject.toml         Python 包与构建元数据
   data/                  当前运行题目与抽样来源记录
-  docs/                  中文说明、实现与迁移说明
   src/jev_vllm/          核心实现
   outputs/               实验输出
   README.md              英文说明

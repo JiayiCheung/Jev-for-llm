@@ -57,7 +57,7 @@ python -m pip install huggingface_hub
 hf download Qwen/Qwen3-0.6B --local-dir models/Qwen3-0.6B
 ```
 
-The [Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/guides/cli) downloads weights, tokenizer and configuration files. If a complete local model already exists, skip the download and use that directory. `pyproject.toml` describes this Python package; it is not a lockfile for GPU dependencies. Editable installation makes the package importable; `run.py` also supports execution directly from the checkout.
+The [Hugging Face CLI](https://huggingface.co/docs/huggingface_hub/guides/cli) downloads weights, tokenizer and configuration files. If a complete local model already exists, skip the download and use that directory. Editable installation makes the package importable; `run.py` also supports execution directly from the checkout.
 
 ### 1.4 Configure the local paths and evaluator
 
@@ -81,9 +81,8 @@ Jev-for-llm/
   config.json            Paths, engine, budgets, API key and policy thresholds
   parameters.json        Selected native fields, types, defaults and actions
   jev_questions.json     Four evaluator rubrics
-  pyproject.toml         Package/build metadata; not a GPU environment lockfile
+  pyproject.toml         Package/build metadata
   data/                  Active tasks and sampling provenance
-  docs/                  Chinese guide, implementation and migration notes
   src/jev_vllm/          Implementation
   outputs/               Generated experiment records
   README.md              English guide
