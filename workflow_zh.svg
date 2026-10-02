@@ -50,7 +50,7 @@
   <path d="M1725 2993 H1770 V3142 H1240" class="edge branch" marker-end="url(#arrowhead)"/>
   <path d="M275 1965 V3060 H530 V3142 H560" class="edge branch" marker-end="url(#arrowhead)"/>
   <path d="M350 2114 V3030 H500 V3110 H560" class="edge branch" marker-end="url(#arrowhead)"/>
-  <path d="M900 3199 V3223 H1780 V1121 H1240" class="edge loop" marker-end="url(#arrowhead)"/>
+  <path d="M900 3199 V3223 H1780 V802 H1240" class="edge loop" marker-end="url(#arrowhead)"/>
   <g><rect x="560" y="155" width="680" height="108" rx="20" class="node start"/>
     <text x="900" y="190" text-anchor="middle" class="node-title">运行 run.py run</text>
     <text x="900" y="225" text-anchor="middle" class="node-detail">cli.main 读取任务与种子</text><text x="900" y="253" text-anchor="middle" class="node-detail">每轮可依据 Jev 反馈调整参数</text>
@@ -129,7 +129,7 @@
   </g>
   <g><rect x="1305" y="2000" width="420" height="135" rx="20" class="node emphasis"/>
     <text x="1515" y="2035" text-anchor="middle" class="node-title">按类型生成方向候选</text>
-    <text x="1515" y="2070" text-anchor="middle" class="node-detail">数值 / 可空数值 / 布尔 / 枚举</text><text x="1515" y="2098" text-anchor="middle" class="node-detail">字符串、列表、映射；只给可行选项</text>
+    <text x="1515" y="2070" text-anchor="middle" class="node-detail">数值 / 可空数值 / 布尔 / 枚举</text><text x="1515" y="2098" text-anchor="middle" class="node-detail">其他类型只给可行项；无候选则保持</text>
   </g>
   <g><rect x="1305" y="2170" width="420" height="114" rx="20" class="node jev"/>
     <text x="1515" y="2205" text-anchor="middle" class="node-title">Jev 请求 ②：选择动作</text>
@@ -167,5 +167,4 @@
   <text x="1248" y="2044" class="edge-label">可调整</text>
   <text x="1535" y="2768" class="edge-label">多个候选</text>
   <text x="1215" y="2773" class="edge-label">单一目标 / 无需再问</text>
-  <text x="1250" y="2130" class="edge-label">无可调候选：保持</text>
 </svg>
