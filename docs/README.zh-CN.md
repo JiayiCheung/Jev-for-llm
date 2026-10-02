@@ -73,8 +73,6 @@ hf download Qwen/Qwen3-0.6B --local-dir models/Qwen3-0.6B
 
 运行前激活环境，或显式使用对应的 Python 可执行文件。保留配置中的其他对象，并按第 3 节直接填写 `jev.api_key`，不需要额外输入凭据。
 
-NVIDIA 驱动、PyTorch CUDA runtime、CUDA Toolkit 是不同层次。可选 JIT 内核还可能需要 Toolkit 和兼容编译器。第一次运行保持 `runtime.use_flashinfer_sampler` 为 false。Windows JIT 编译可能需要正确初始化的 MSVC 开发者终端；安装 VS Code C/C++ 扩展不会安装 `cl.exe`。
-
 ## 2. 目录与文件职责
 
 ```text
@@ -406,7 +404,6 @@ python -m unittest discover -s ../tests -v
 | Billing / out of funds | TypeSafe 组织余额 |
 | 超时或 TLS 错误 | 网络、代理、超时设置；当前不自动重试 |
 | 无法 import vllm | 当前解释器环境与所安装 wheel |
-| 找不到 cl.exe | 可选 JIT 编译使用的 MSVC 开发者环境 |
 | 显存不足 | 其他 GPU 进程、上下文长度、引擎显存设置 |
 | 自行新增 min_tokens 后报错 | 是否超过当轮实际剩余预算；smoke 只分配 8 个 token |
 | 预算用完仍无最终答案 | 检查 thinking 输出，按需要有意识地提高预算 |

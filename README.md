@@ -73,8 +73,6 @@ Edit the existing `paths` object in `config.json` to use your machine. This frag
 
 Activate your environment before running, or explicitly use its Python executable. Keep the other configuration sections and fill `jev.api_key` directly; no separate credential input is required.
 
-NVIDIA drivers, PyTorch CUDA runtime and CUDA Toolkit are different layers. Optional JIT kernels can additionally need Toolkit and a compatible compiler. Keep `runtime.use_flashinfer_sampler` false for the first run. Windows JIT compilation may need a correctly initialized MSVC developer terminal; installing the VS Code C/C++ extension does not install `cl.exe`.
-
 ## 2. Layout and ownership
 
 ```text
@@ -374,7 +372,6 @@ These tests use fake model/evaluator objects. They do not consume API credits. A
 | Billing/out-of-funds response | TypeSafe organization balance |
 | Timeout/TLS error | Network, proxy and timeout settings; no automatic retry |
 | Cannot import vllm | Selected Python environment and installed wheel |
-| cl.exe not found | MSVC developer environment for optional JIT compilation |
 | GPU out of memory | Other GPU jobs, context length and engine memory settings |
 | min_tokens error after adding that field | It must fit the actual remaining segment budget; smoke only allocates eight tokens |
 | Budget reached without final answer | Inspect thinking output and increase budgets deliberately if needed |
