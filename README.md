@@ -1,6 +1,6 @@
 # Jev and vLLM Inference Control
 
-**English** | [简体中文](docs/README.zh-CN.md) | [Project Website](https://jiayicheung.github.io/Jev-for-llm/)
+**English** | [简体中文](docs/README.zh-CN.md) | [Website](https://jiayicheung.github.io/Jev-for-llm/)
 
 Qwen generates text locally through the Python vLLM API. Jev evaluates each segment using four Score rubrics. A configurable controller chooses the next segment's parameters. The model stays loaded throughout one process. Only Jev uses HTTPS; no local API server is required.
 
