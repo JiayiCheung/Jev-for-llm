@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Jev-guided inference-time sampling control for language models: project overview and method.">
+  <title>Jev for LLM · Project Page</title>
+  <link rel="stylesheet" href="site.css">
+  <script defer src="site.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#abstract" data-i18n="skip">跳到摘要</a>
+  <header class="topbar">
+    <a class="wordmark" href="#top">Jev for LLM</a>
+    <nav aria-label="Sections">
+      <a href="#abstract" data-i18n="navAbstract">摘要</a>
+      <a href="#method" data-i18n="navMethod">方法</a>
+      <a href="#evaluation" data-i18n="navEvaluation">实验</a>
+    </nav>
+    <div class="language-switch" role="group" aria-label="Language">
+      <button type="button" data-lang="zh" aria-pressed="true">中文</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero paper-width" aria-labelledby="title">
+      <p class="status" data-i18n="status">研究原型 · 项目主页</p>
+      <h1 id="title" data-i18n="title">让语言模型在生成过程中调整采样参数</h1>
+      <p class="subtitle" data-i18n="subtitle">Jev 引导的推理时参数控制</p>
+      <p class="hero-summary" data-i18n="heroSummary">语言模型分段生成，Jev 对新片段评分，并为下一段选择参数调整方向与具体值。</p>
+      <div class="hero-links">
+        <a href="https://github.com/JiayiCheung/Jev-for-llm">Code</a>
+        <a data-doc="readme" href="https://github.com/JiayiCheung/Jev-for-llm/blob/main/docs/README.zh-CN.md">README</a>
+        <a data-doc="implementation" href="https://github.com/JiayiCheung/Jev-for-llm/blob/main/docs/implementation.zh-CN.md" data-i18n="methodDoc">实现细节</a>
+      </div>
+    </section>
+
+    <section class="teaser" aria-label="Method overview">
+      <figure class="paper-width">
+        <div class="teaser-frame">
+          <div class="teaser-column">
+            <span class="figure-label" data-i18n="modelLabel">生成模型</span>
+            <strong>Qwen + vLLM</strong>
+            <p data-i18n="modelText">按当前参数生成一个片段</p>
+          </div>
+          <div class="teaser-arrow" aria-hidden="true">→</div>
+          <div class="teaser-column judge-column">
+            <span class="figure-label" data-i18n="judgeLabel">外部判断</span>
+            <strong>Jev</strong>
+            <p data-i18n="judgeText">四项评分 · 参数动作 Choice</p>
+          </div>
+          <div class="teaser-arrow" aria-hidden="true">→</div>
+          <div class="teaser-column">
+            <span class="figure-label" data-i18n="nextLabel">下一段</span>
+            <strong data-i18n="nextTitle">更新采样参数</strong>
+            <p data-i18n="nextText">仅对选中的参数应用合法值</p>
+          </div>
+        </div>
+        <figcaption data-i18n="teaserCaption">方法概览。Jev 不生成答案；它评价本段文本，并在允许的参数范围内辅助下一段生成。固定参数组只记录评分。</figcaption>
+      </figure>
+    </section>
+
+    <section class="paper-section paper-width" id="abstract" aria-labelledby="abstract-title">
+      <h2 id="abstract-title" data-i18n="abstractTitle">摘要</h2>
+      <p data-i18n="abstractBody">大语言模型通常在整道题中使用同一套采样设置。本项目研究能否利用生成过程中的外部反馈，在片段之间调整这些设置。Qwen 通过 vLLM 生成文本；Jev 分别评价正确性、相关性、重复性和完整性，再从参数类型对应的合法动作中选择调整方向，必要时选择具体数值。程序保留每轮评分、决策、实际生效参数和答案快照，以便后续分析质量与推理成本。</p>
+    </section>
+
+    <section class="paper-section paper-width" id="method" aria-labelledby="method-title">
+      <h2 id="method-title" data-i18n="methodTitle">方法</h2>
+      <div class="method-points">
+        <article><span>01</span><h3 data-i18n="methodOneTitle">分段生成与评分</h3><p data-i18n="methodOneBody">每段生成后，Jev 按四项规则返回 0–4 的 Score；程序映射到 0–1 后用于控制决策。评分针对已经生成的文本。</p></article>
+        <article><span>02</span><h3 data-i18n="methodTwoTitle">按参数类型选择动作</h3><p data-i18n="methodTwoBody">程序读取 parameters.json 中的定义，为数值、布尔、枚举和可空参数构建不同的 Choice。Jev 先选方向，再在需要时选具体值。</p></article>
+        <article><span>03</span><h3 data-i18n="methodThreeTitle">下一段生效并记录</h3><p data-i18n="methodThreeBody">参数变化只作用于下一段。result.json 记录请求、反馈和实际使用的参数；answer.txt 保留每轮结束时的累计答案。</p></article>
+      </div>
+    </section>
+
+    <section class="paper-section comparison" id="evaluation" aria-labelledby="evaluation-title">
+      <div class="paper-width">
+        <h2 id="evaluation-title" data-i18n="evaluationTitle">实验结果</h2>
+        <div class="results-space" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <section class="paper-section paper-width resources" aria-labelledby="resources-title">
+      <h2 id="resources-title" data-i18n="resourcesTitle">代码与复现</h2>
+      <p data-i18n="resourcesBody">环境搭建、配置文件格式、全部运行模式与输出字段见 README；参数类型和调用链在实现文档中说明。</p>
+      <div class="resource-links">
+        <a data-doc="readme" href="https://github.com/JiayiCheung/Jev-for-llm/blob/main/docs/README.zh-CN.md">README ↗</a>
+        <a data-doc="parameters" href="https://github.com/JiayiCheung/Jev-for-llm/blob/main/docs/parameter_examples.zh-CN.md" data-i18n="parametersDoc">参数示例</a>
+        <a data-doc="implementation" href="https://github.com/JiayiCheung/Jev-for-llm/blob/main/docs/implementation.zh-CN.md" data-i18n="implementationDoc">实现说明</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="paper-width"><span>Jev for LLM</span><span data-i18n="footer">研究原型 · 代码见仓库</span></footer>
+</body>
+</html>
