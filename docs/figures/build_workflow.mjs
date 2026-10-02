@@ -70,17 +70,17 @@ const words = {
 
 const escapeXml = value => String(value).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 const place = {
-  config:[560,298,680,114], initial:[560,447,680,114],
-  setup:[560,596,680,114], preflight:[560,745,680,114], request:[560,894,680,135],
-  requestLog:[65,894,420,135], generate:[560,1064,680,114], decode:[560,1213,680,114],
-  answerLog:[65,1213,420,114], score:[560,1362,680,135], scoreLog:[65,1362,420,135],
-  parse:[560,1532,680,135], stop:[560,1702,680,114], finish:[65,1702,420,114],
-  rollback:[560,1851,680,114], restore:[65,1851,420,114],
-  cooldown:[560,2000,680,114], hold:[65,2000,420,114],
-  directions:[1305,2000,420,135], directionCall:[1305,2170,420,114],
-  parseDirection:[1305,2319,420,114], candidates:[1305,2468,420,135],
-  exactGate:[1305,2638,420,114], valueCall:[1305,2787,420,114],
-  commit:[1305,2936,420,114], next:[560,3085,680,114],
+  config:[800,298,680,114], initial:[800,447,680,114],
+  setup:[800,596,680,114], preflight:[800,745,680,114], request:[800,894,680,135],
+  requestLog:[80,894,420,135], generate:[800,1064,680,114], decode:[800,1213,680,114],
+  answerLog:[80,1213,420,114], score:[800,1362,680,135], scoreLog:[80,1362,420,135],
+  parse:[800,1532,680,135], stop:[800,1702,680,114], finish:[80,1702,420,114],
+  rollback:[800,1851,680,114], restore:[80,1851,420,114],
+  cooldown:[800,2000,680,114], hold:[80,2000,420,114],
+  directions:[1830,2000,420,135], directionCall:[1830,2170,420,114],
+  parseDirection:[1830,2319,420,114], candidates:[1830,2468,420,135],
+  exactGate:[1830,2638,420,114], valueCall:[1830,2787,420,114],
+  commit:[1830,2936,420,114], next:[800,3085,680,114],
 };
 const kind = {
   config:'normal', initial:'normal', setup:'normal', preflight:'decision',
@@ -107,34 +107,34 @@ function diagram(lang) {
   const t = words[lang];
   const keys = Object.keys(place);
   const paths = [
-    edge('M900 412 V447'),edge('M900 561 V596'),
-    edge('M900 710 V745'),edge('M900 859 V894'),edge('M900 1029 V1064'),
-    edge('M560 802 H30 V1759 H65','branch'),
-    edge('M560 961 H485','record'),edge('M900 1178 V1213'),
-    edge('M560 1270 H485','record'),edge('M900 1327 V1362'),
-    edge('M560 1429 H485','record'),edge('M900 1497 V1532'),
-    edge('M900 1667 V1702'),edge('M560 1759 H485','branch'),
-    edge('M900 1816 V1851'),edge('M560 1908 H485','branch'),
-    edge('M900 1965 V2000'),edge('M560 2057 H485','branch'),
-    edge('M1240 2057 H1305','branch'),
-    edge('M1515 2135 V2170'),edge('M1515 2284 V2319'),
-    edge('M1515 2433 V2468'),edge('M1515 2603 V2638'),
-    edge('M1515 2752 V2787'),edge('M1515 2901 V2936'),
-    edge('M1305 2695 H1268 V2993 H1305','bypass'),
-    edge('M1305 2068 H1278 V3138 H1240','bypass'),
-    edge('M1725 2993 H1770 V3142 H1240','branch'),
-    edge('M275 1965 V3060 H530 V3142 H560','branch'),
-    edge('M350 2114 V3030 H500 V3110 H560','branch'),
-    edge('M900 3199 V3223 H1780 V802 H1240','loop'),
+    edge('M1140 412 V447'),edge('M1140 561 V596'),
+    edge('M1140 710 V745'),edge('M1140 859 V894'),edge('M1140 1029 V1064'),
+    edge('M800 802 H30 V1759 H80','branch'),
+    edge('M800 961 H500','record'),edge('M1140 1178 V1213'),
+    edge('M800 1270 H500','record'),edge('M1140 1327 V1362'),
+    edge('M800 1429 H500','record'),edge('M1140 1497 V1532'),
+    edge('M1140 1667 V1702'),edge('M800 1759 H500','branch'),
+    edge('M1140 1816 V1851'),edge('M800 1908 H500','branch'),
+    edge('M1140 1965 V2000'),edge('M800 2057 H500','branch'),
+    edge('M1480 2057 H1830','branch'),
+    edge('M2040 2135 V2170'),edge('M2040 2284 V2319'),
+    edge('M2040 2433 V2468'),edge('M2040 2603 V2638'),
+    edge('M2040 2752 V2787'),edge('M2040 2901 V2936'),
+    edge('M1830 2695 H1760 V2993 H1830','bypass'),
+    edge('M1830 2068 H1780 V3138 H1480','bypass'),
+    edge('M2250 2993 H2310 V3142 H1480','branch'),
+    edge('M290 1965 V3060 H740 V3142 H800','branch'),
+    edge('M365 2114 V3030 H720 V3110 H800','branch'),
+    edge('M1140 3199 V3223 H2320 V802 H1480','loop'),
   ];
   const tags = [
-    label(505,1746,t.yes),label(918,1840,t.no),
-    label(505,1895,t.rollbackYes),label(918,1988,t.no),
-    label(505,2045,t.cooldownYes),label(1248,2044,t.ready),
-    label(1535,2768,t.many),label(1215,2773,t.one),
+    label(540,1746,t.yes),label(1158,1840,t.no),
+    label(540,1895,t.rollbackYes),label(1158,1988,t.no),
+    label(540,2045,t.cooldownYes),label(1510,2044,t.ready),
+    label(2060,2768,t.many),label(1510,2773,t.one),
   ];
   return `<?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 3130" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2380 3130" role="img" aria-labelledby="title desc">
   <title id="title">${escapeXml(t.title)}</title>
   <desc id="desc">${escapeXml(t.subtitle)}</desc>
   <defs><marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1 L10 6 L1 11" fill="none" stroke="#626262" stroke-width="1.6"/></marker></defs>
@@ -150,14 +150,14 @@ function diagram(lang) {
     .edge.record,.edge.branch,.edge.bypass,.edge.loop{stroke:#626262}
     .edge-label{fill:#454545;font:700 19px Arial,'Microsoft YaHei',sans-serif}
   </style>
-  <rect width="1800" height="3130" fill="#fff"/>
-  <rect x="12" y="12" width="1776" height="3106" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-dasharray="4 6"/>
-  <rect x="44" y="160" width="1712" height="582" fill="#f5f5f5"/>
-  <rect x="44" y="757" width="1712" height="835" fill="#f7f7f7"/>
-  <rect x="44" y="1607" width="1712" height="1352" fill="#f5f5f5"/>
+  <rect width="2380" height="3130" fill="#fff"/>
+  <rect x="12" y="12" width="2356" height="3106" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-dasharray="4 6"/>
+  <rect x="44" y="160" width="2292" height="582" fill="#f5f5f5"/>
+  <rect x="44" y="757" width="2292" height="835" fill="#f7f7f7"/>
+  <rect x="44" y="1607" width="2292" height="1352" fill="#f5f5f5"/>
   <text x="65" y="75" fill="#292929" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="47" font-weight="700">${escapeXml(t.title)}</text>
   <text x="67" y="120" fill="#555" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="23">${escapeXml(t.subtitle)}</text>
-  <path d="M65 138 H1725" stroke="#a0a0a0" stroke-width="1.5"/>
+  <path d="M65 138 H2315" stroke="#a0a0a0" stroke-width="1.5"/>
   <g transform="translate(0,-120)">
     ${paths.join('\n    ')}
     ${keys.map(key=>node(key,t[key])).join('\n    ')}
