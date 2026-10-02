@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1560" role="img" aria-labelledby="title desc">
+  <title id="title">Jev-guided segmented inference</title>
+  <desc id="desc">One task and seed: generate → score → decide → next segment. Scores describe text already generated; rollback restores settings, not text.</desc>
+  <defs>
+    <marker id="head" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1 L10 6 L1 11" fill="none" stroke="#7fa9c7" stroke-width="1.8"/></marker>
+  </defs>
+  <style>
+    .box { fill:#10243b; stroke:#315878; stroke-width:2; }
+    .box.emphasis { fill:#10385a; stroke:#3986b5; }
+    .box.jev { fill:#10334a; stroke:#25a3b7; }
+    .box.decision { fill:#0b1e32; stroke:#609ac0; stroke-dasharray:6 5; }
+    .box-title { fill:#e6f3ff; font:700 25px Arial,'Microsoft YaHei',sans-serif; }
+    .box-title.emphasis,.box-title.jev { fill:#a5dfff; }
+    .box-detail { fill:#b3c8d9; font:20px Arial,'Microsoft YaHei',sans-serif; }
+    .arrow { fill:none; stroke:#7fa9c7; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
+    .arrow.side { stroke:#607f9b; }.arrow.loop { stroke:#46afd0; stroke-width:3; }
+    .tag { fill:#8bd1f4; font:700 19px Arial,'Microsoft YaHei',sans-serif; }
+  </style>
+  <rect width="1600" height="1560" rx="24" fill="#091522"/>
+  <text x="70" y="72" fill="#e9f5ff" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="44" font-weight="700">Jev-guided segmented inference</text>
+  <text x="72" y="113" fill="#9ebbd0" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="22">One task and seed: generate → score → decide → next segment</text>
+  <path d="M70 131 H1530" stroke="#315878" stroke-width="2"/>
+  <path d="M470 213 H600" class="arrow " marker-end="url(#head)"/>
+  <path d="M1000 213 H1130" class="arrow " marker-end="url(#head)"/>
+  <path d="M1330 266 V304 H800 V334" class="arrow " marker-end="url(#head)"/>
+  <path d="M800 444 V492" class="arrow " marker-end="url(#head)"/>
+  <path d="M590 547 H470" class="arrow side" marker-end="url(#head)"/>
+  <path d="M800 602 V655" class="arrow " marker-end="url(#head)"/>
+  <path d="M590 703 H470" class="arrow side" marker-end="url(#head)"/>
+  <path d="M800 751 V804" class="arrow " marker-end="url(#head)"/>
+  <path d="M590 852 H510 V1009 H470" class="arrow " marker-end="url(#head)"/>
+  <path d="M1010 852 H1040 V1009 H1080" class="arrow " marker-end="url(#head)"/>
+  <path d="M1140 1068 V1088 H1000 V1115" class="arrow " marker-end="url(#head)"/>
+  <path d="M1370 1068 V1115" class="arrow " marker-end="url(#head)"/>
+  <path d="M1375 1225 V1265" class="arrow " marker-end="url(#head)"/>
+  <path d="M270 1068 V1455 H590" class="arrow " marker-end="url(#head)"/>
+  <path d="M1000 1225 V1360 H800 V1405" class="arrow " marker-end="url(#head)"/>
+  <path d="M1530 1170 H1555 V1455 H1010" class="arrow " marker-end="url(#head)"/>
+  <path d="M1375 1375 V1390 H1050 V1455 H1010" class="arrow " marker-end="url(#head)"/>
+  <path d="M800 1505 V1538 H1580 V389 H1010" class="arrow loop" marker-end="url(#head)"/>
+  <rect x="70" y="160" width="400" height="106" rx="20" class="box normal"/><text x="270" y="202" text-anchor="middle" class="box-title normal">Load experiment configuration</text><text x="270" y="237" text-anchor="middle" class="box-detail">config.json · parameters.json · Score questions</text>
+  <rect x="600" y="160" width="400" height="106" rx="20" class="box normal"/><text x="800" y="202" text-anchor="middle" class="box-title normal">Encode the task</text><text x="800" y="237" text-anchor="middle" class="box-detail">Qwen chat template · initial prompt tokens</text>
+  <rect x="1130" y="160" width="400" height="106" rx="20" class="box normal"/><text x="1330" y="202" text-anchor="middle" class="box-title normal">Initialize current parameters</text><text x="1330" y="237" text-anchor="middle" class="box-detail">Build sampling map from declared initial values</text>
+  <rect x="590" y="334" width="420" height="110" rx="20" class="box emphasis"/><text x="800" y="376" text-anchor="middle" class="box-title emphasis">Generate a segment with Qwen / vLLM</text><text x="800" y="411" text-anchor="middle" class="box-detail">Current settings + accumulated tokens · segment budget</text>
+  <rect x="590" y="492" width="420" height="110" rx="20" class="box jev"/><text x="800" y="534" text-anchor="middle" class="box-title jev">Request Jev Scores</text><text x="800" y="569" text-anchor="middle" class="box-detail">Correctness · relevance · repetition · completeness</text>
+  <rect x="70" y="492" width="400" height="110" rx="20" class="box normal"/><text x="270" y="528" text-anchor="middle" class="box-title normal">Save every round</text><text x="270" y="563" text-anchor="middle" class="box-detail">result.json: requests, Scores, decisions, applied settings</text><text x="270" y="591" text-anchor="middle" class="box-detail">answer.txt: cumulative answer snapshots</text>
+  <rect x="590" y="655" width="420" height="96" rx="20" class="box decision"/><text x="800" y="691" text-anchor="middle" class="box-title decision">Can another segment run?</text><text x="800" y="726" text-anchor="middle" class="box-detail">Model stop / optional Score stop / token, context,</text><text x="800" y="754" text-anchor="middle" class="box-detail">round, or Jev-call budget exhausted</text>
+  <rect x="70" y="655" width="400" height="96" rx="20" class="box normal"/><text x="270" y="697" text-anchor="middle" class="box-title normal">Finish this run</text><text x="270" y="732" text-anchor="middle" class="box-detail">Save final status and stop reason</text>
+  <rect x="590" y="804" width="420" height="96" rx="20" class="box decision"/><text x="800" y="846" text-anchor="middle" class="box-title decision">Select experiment mode</text><text x="800" y="881" text-anchor="middle" class="box-detail">Both fixed and adaptive record segment Scores</text>
+  <rect x="70" y="950" width="400" height="118" rx="20" class="box normal"/><text x="270" y="992" text-anchor="middle" class="box-title normal">fixed: keep parameters</text><text x="270" y="1027" text-anchor="middle" class="box-detail">Use the same sampling settings next segment</text>
+  <rect x="1080" y="950" width="450" height="118" rx="20" class="box decision"/><text x="1305" y="992" text-anchor="middle" class="box-title decision">adaptive: inspect feedback first</text><text x="1305" y="1027" text-anchor="middle" class="box-detail">Rollback last change? In a cooldown round?</text>
+  <rect x="850" y="1115" width="300" height="110" rx="20" class="box normal"/><text x="1000" y="1157" text-anchor="middle" class="box-title normal">Restore or keep</text><text x="1000" y="1192" text-anchor="middle" class="box-detail">Revert prior settings or defer adjustment</text>
+  <rect x="1220" y="1115" width="310" height="110" rx="20" class="box jev"/><text x="1375" y="1157" text-anchor="middle" class="box-title jev">Jev selects parameter actions</text><text x="1375" y="1192" text-anchor="middle" class="box-detail">Offer legal, type-specific direction Choices</text>
+  <rect x="1220" y="1265" width="310" height="110" rx="20" class="box jev"/><text x="1375" y="1301" text-anchor="middle" class="box-title jev">Select exact values when needed</text><text x="1375" y="1336" text-anchor="middle" class="box-detail">Only these actions trigger another Jev Choice</text><text x="1375" y="1364" text-anchor="middle" class="box-detail">Program generates bounded, stepped candidates</text>
+  <rect x="590" y="1405" width="420" height="100" rx="20" class="box emphasis"/><text x="800" y="1447" text-anchor="middle" class="box-title emphasis">Prepare the next segment</text><text x="800" y="1482" text-anchor="middle" class="box-detail">New settings take effect in the next vLLM request</text>
+  <text x="505" y="688" class="tag">No</text>
+  <text x="817" y="784" class="tag">Yes</text>
+  <text x="932" y="1097" class="tag">rollback / cooldown</text>
+  <text x="1360" y="1097" class="tag">ready to adjust</text>
+  <text x="1380" y="1248" class="tag">value needed</text>
+  <text x="1454" y="1140" class="tag">direct action</text>
+  <text x="1120" y="1384" class="tag">Return with accumulated tokens and current settings</text>
+  <text x="70" y="1540" fill="#8eaabf" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="17">Scores describe text already generated; rollback restores settings, not text.</text>
+</svg>

@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Jev-guided inference-time sampling control for language models: project overview and method.">
   <title>Jev for LLM · Project Page</title>
-  <link rel="stylesheet" href="site.css?v=2">
-  <script defer src="site.js"></script>
+  <link rel="stylesheet" href="site.css?v=3">
+  <script defer src="site.js?v=3"></script>
 </head>
 <body>
   <a class="skip-link" href="#abstract" data-i18n="skip">跳到摘要</a>
@@ -83,6 +83,20 @@
         <article><span>01</span><h3 data-i18n="methodOneTitle">分段生成与评分</h3><p data-i18n="methodOneBody">每段生成后，Jev 按四项规则返回 0–4 的 Score；程序映射到 0–1 后用于控制决策。评分针对已经生成的文本。</p></article>
         <article><span>02</span><h3 data-i18n="methodTwoTitle">按参数类型选择动作</h3><p data-i18n="methodTwoBody">程序读取 parameters.json 中的定义，为数值、布尔、枚举和可空参数构建不同的 Choice。Jev 先选方向，再在需要时选具体值。</p></article>
         <article><span>03</span><h3 data-i18n="methodThreeTitle">下一段生效并记录</h3><p data-i18n="methodThreeBody">参数变化只作用于下一段。result.json 记录请求、反馈和实际使用的参数；answer.txt 保留每轮结束时的累计答案。</p></article>
+      </div>
+    </section>
+
+    <section class="workflow-section" aria-labelledby="workflow-title">
+      <div class="workflow-width">
+        <h2 id="workflow-title" data-i18n="workflowTitle">完整流程</h2>
+        <figure>
+          <div class="workflow-frame">
+            <a data-workflow-link href="workflow_zh.svg" target="_blank" rel="noopener">
+              <img data-workflow-image src="workflow_zh.svg" width="1600" height="1560" loading="lazy" alt="Jev 分段推理的完整流程图：初始化、生成、评分、分支决策与下一段参数反馈">
+            </a>
+          </div>
+          <figcaption data-i18n="workflowCaption">点击流程图可查看原尺寸。</figcaption>
+        </figure>
       </div>
     </section>
 
