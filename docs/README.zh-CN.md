@@ -85,7 +85,7 @@ Jev-for-llm/
   data/                  当前运行题目与抽样来源记录
   src/jev_vllm/          核心实现
   outputs/               实验输出
-  README.md              英文说明
+  README.md              项目说明
 ```
 
 开发工作区还在仓库外使用 `../tests`、`../scripts`、`../data` 分别保存控制器测试、辅助脚本/日志、原始下载。这些目录不属于仓库，也不是正常运行的前提。单独克隆时可能不存在；实际使用的题目是仓库内 `data/tasks.jsonl`。vLLM 原生接口测试另行维护。

@@ -85,7 +85,7 @@ Jev-for-llm/
   data/                  Active tasks and sampling provenance
   src/jev_vllm/          Implementation
   outputs/               Generated experiment records
-  README.md              English guide
+  README.md              Project guide
 ```
 
 The development workspace also has sibling `../tests`, `../scripts` and `../data` directories for controller tests, helper scripts/logs and raw downloads. They are outside this repository and are not a prerequisite for normal runs. A standalone clone may not contain them; its active dataset is the repository-local `data/tasks.jsonl`. Native vLLM interface tests are maintained separately.
