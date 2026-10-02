@@ -49,10 +49,10 @@ h2 { font-size: 31px; line-height: 1.3; letter-spacing: -.025em; margin: 0 0 23p
 h3 { font-size: 19px; line-height: 1.4; margin: 8px 0; }
 .method-points p { font-size: 15px; line-height: 1.65; margin: 0; }
 .workflow-section { padding: 68px 0 0; }
-.workflow-width { width: min(100% - 44px, 1200px); margin-inline: auto; }
+.workflow-width { width: min(100% - 44px, 1450px); margin-inline: auto; }
 .workflow-frame { overflow-x: auto; border: 1px solid #d5d5d5; background: #fff; }
 .workflow-frame a { display: block; line-height: 0; }
-.workflow-frame img { display: block; width: 100%; height: auto; }
+.workflow-frame img { display: block; width: 1800px; max-width: none; height: auto; }
 .comparison { margin-top: 65px; padding: 58px 0 63px; background: #f6f7f8; }
 .results-space { min-height: 150px; }
 .resources { padding-bottom: 75px; }
@@ -74,7 +74,7 @@ footer { border-top: 1px solid var(--line); padding-top: 18px; padding-bottom: 3
   .feedback-mobile { display: block; margin: 0; font-size: 13px; font-weight: 600; }
   .method-points { grid-template-columns: 1fr; }
   .workflow-section { padding-top: 48px; }
-  .workflow-frame img { width: 1200px; max-width: none; }
+  .workflow-frame img { width: 1600px; }
   .paper-section { padding-top: 42px; }
   .comparison { margin-top: 45px; padding-bottom: 45px; }
   footer { flex-wrap: wrap; }
