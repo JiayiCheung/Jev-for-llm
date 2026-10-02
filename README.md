@@ -12,7 +12,7 @@ Qwen generates text locally through the Python vLLM API. Jev evaluates each segm
 - [Call flow and decision rules](#4-call-flow-and-decision-rules)
 - [Run modes](#5-run-modes)
 - [First run and results](#6-first-run-and-results)
-- [Tests and troubleshooting](#7-tests-and-troubleshooting)
+- [Troubleshooting](#7-troubleshooting)
 - [Interpretation limits](#8-interpretation-limits-and-further-reading)
 
 ## 1. Environment and installation
@@ -29,7 +29,7 @@ git clone https://github.com/JiayiCheung/Jev-for-llm.git
 cd Jev-for-llm
 ```
 
-All commands below run from this repository root, where `run.py` is located. The repository contains machine-specific configuration, so cloning alone is not sufficient: update the paths in section 1.4 before running checks. If you already have a working vLLM environment, activate it and skip dependency reinstallation.
+All commands below run from this repository root, where `run.py` is located. Update the paths in section 1.4 before running the project. If you already have a working vLLM environment, activate it and skip dependency reinstallation.
 
 ### 1.2 Install the GPU inference backend
 
@@ -89,10 +89,6 @@ Jev-for-llm/
 ```
 
 ## 3. File formats and configuration
-
-The three configuration files use JSON structure with custom `#` line comments. Strings require double quotes; booleans are `true`/`false`; an absent optional value is `null`. No trailing commas, `//` comments or block comments. A plain `json.load` cannot read these commented files: use `load_config`. VS Code's YAML association only supplies highlighting; ordinary YAML syntax is not accepted.
-
-Keep code, prompts and configuration comments in English. Chinese is provided in this documentation only. Relative configuration paths resolve from the configuration file's directory. JSON Windows paths need escaped backslashes (`"E:\\Models\\Qwen3-0.6B"`) or forward slashes.
 
 | Section in config.json | Controls |
 |---|---|
@@ -163,7 +159,7 @@ Tasks belong in `data/tasks.jsonl`, not in the rubric file. JSONL is strict JSON
 {"id":"example_001","prompt":"Solve 2x + 3 = 11.","reference_answer":"4"}
 ```
 
-Unique nonempty `id` and `prompt` are required. Reference fields are optional metadata and are not sent to Qwen/Jev. The included development sample contains ten original English GSM8K **training** questions sampled without replacement using seed 42; provenance is in `data/gsm8k_sample_manifest.json`. It is not a full held-out benchmark. No automatic reference-answer grader is implemented.
+Unique nonempty `id` and `prompt` are required. Reference fields are optional metadata and are not sent to Qwen/Jev. The included sample contains ten original English GSM8K **training** questions sampled without replacement using seed 42; provenance is in `data/gsm8k_sample_manifest.json`. It is not a full held-out benchmark. No automatic reference-answer grader is implemented.
 
 ## 4. Call flow and decision rules
 
@@ -350,15 +346,7 @@ python run.py compare 2>&1 | Tee-Object -FilePath outputs/compare.log
 
 This PowerShell example saves a console log inside the configured checkout. Logs may contain task/model output. Results, not only console messages, are the experiment record.
 
-## 7. Tests and troubleshooting
-
-Optional developer-only check: if you also have the separate sibling test directory with the expected development layout, run:
-
-```powershell
-python -m unittest discover -s ../tests -v
-```
-
-These tests use fake model/evaluator objects. They do not consume API credits. A standalone checkout needs the separate test directory before this command is meaningful.
+## 7. Troubleshooting
 
 | Symptom | What to check |
 |---|---|
