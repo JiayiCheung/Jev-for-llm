@@ -1,63 +1,171 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1560" role="img" aria-labelledby="title desc">
-  <title id="title">Jev-guided segmented inference</title>
-  <desc id="desc">One task and seed: generate → score → decide → next segment. Scores describe text already generated; rollback restores settings, not text.</desc>
-  <defs>
-    <marker id="head" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1 L10 6 L1 11" fill="none" stroke="#7fa9c7" stroke-width="1.8"/></marker>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 3250" role="img" aria-labelledby="title desc">
+  <title id="title">One run: Jev-guided segmented inference</title>
+  <desc id="desc">From initial parameters to the next segment · one task and seed</desc>
+  <defs><marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1 L10 6 L1 11" fill="none" stroke="#8ab6d4" stroke-width="1.8"/></marker></defs>
   <style>
-    .box { fill:#10243b; stroke:#315878; stroke-width:2; }
-    .box.emphasis { fill:#10385a; stroke:#3986b5; }
-    .box.jev { fill:#10334a; stroke:#25a3b7; }
-    .box.decision { fill:#0b1e32; stroke:#609ac0; stroke-dasharray:6 5; }
-    .box-title { fill:#e6f3ff; font:700 25px Arial,'Microsoft YaHei',sans-serif; }
-    .box-title.emphasis,.box-title.jev { fill:#a5dfff; }
-    .box-detail { fill:#b3c8d9; font:20px Arial,'Microsoft YaHei',sans-serif; }
-    .arrow { fill:none; stroke:#7fa9c7; stroke-width:2.5; stroke-linecap:round; stroke-linejoin:round; }
-    .arrow.side { stroke:#607f9b; }.arrow.loop { stroke:#46afd0; stroke-width:3; }
-    .tag { fill:#8bd1f4; font:700 19px Arial,'Microsoft YaHei',sans-serif; }
+    .node{fill:#12273e;stroke:#386381;stroke-width:2}
+    .node.start,.node.emphasis{fill:#10395b;stroke:#448ec2}
+    .node.jev{fill:#10374d;stroke:#38abc0}
+    .node.decision{fill:#0b2033;stroke:#6ba3c7;stroke-dasharray:7 6}
+    .node.record{fill:#142434;stroke:#526d80}.node.finish{fill:#243142;stroke:#75899a}
+    .node-title{fill:#e6f4ff;font:700 26px Arial,'Microsoft YaHei',sans-serif}
+    .node-detail{fill:#b5cee0;font:20px Arial,'Microsoft YaHei',sans-serif}
+    .edge{fill:none;stroke:#8ab6d4;stroke-width:2.6;stroke-linejoin:round;stroke-linecap:round}
+    .edge.record{stroke:#708c9e}.edge.branch{stroke:#83a7c2}.edge.bypass{stroke:#55b6ca}.edge.loop{stroke:#4fc0dd;stroke-width:3}
+    .edge-label{fill:#9ddafa;font:700 19px Arial,'Microsoft YaHei',sans-serif}
   </style>
-  <rect width="1600" height="1560" rx="24" fill="#091522"/>
-  <text x="70" y="72" fill="#e9f5ff" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="44" font-weight="700">Jev-guided segmented inference</text>
-  <text x="72" y="113" fill="#9ebbd0" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="22">One task and seed: generate → score → decide → next segment</text>
-  <path d="M70 131 H1530" stroke="#315878" stroke-width="2"/>
-  <path d="M470 213 H600" class="arrow " marker-end="url(#head)"/>
-  <path d="M1000 213 H1130" class="arrow " marker-end="url(#head)"/>
-  <path d="M1330 266 V304 H800 V334" class="arrow " marker-end="url(#head)"/>
-  <path d="M800 444 V492" class="arrow " marker-end="url(#head)"/>
-  <path d="M590 547 H470" class="arrow side" marker-end="url(#head)"/>
-  <path d="M800 602 V655" class="arrow " marker-end="url(#head)"/>
-  <path d="M590 703 H470" class="arrow side" marker-end="url(#head)"/>
-  <path d="M800 751 V804" class="arrow " marker-end="url(#head)"/>
-  <path d="M590 852 H510 V1009 H470" class="arrow " marker-end="url(#head)"/>
-  <path d="M1010 852 H1040 V1009 H1080" class="arrow " marker-end="url(#head)"/>
-  <path d="M1140 1068 V1088 H1000 V1115" class="arrow " marker-end="url(#head)"/>
-  <path d="M1370 1068 V1115" class="arrow " marker-end="url(#head)"/>
-  <path d="M1375 1225 V1265" class="arrow " marker-end="url(#head)"/>
-  <path d="M270 1068 V1455 H590" class="arrow " marker-end="url(#head)"/>
-  <path d="M1000 1225 V1360 H800 V1405" class="arrow " marker-end="url(#head)"/>
-  <path d="M1530 1170 H1555 V1455 H1010" class="arrow " marker-end="url(#head)"/>
-  <path d="M1375 1375 V1390 H1050 V1455 H1010" class="arrow " marker-end="url(#head)"/>
-  <path d="M800 1505 V1538 H1580 V389 H1010" class="arrow loop" marker-end="url(#head)"/>
-  <rect x="70" y="160" width="400" height="106" rx="20" class="box normal"/><text x="270" y="202" text-anchor="middle" class="box-title normal">Load config and Score questions</text><text x="270" y="237" text-anchor="middle" class="box-detail">config.json · parameters.json</text>
-  <rect x="600" y="160" width="400" height="106" rx="20" class="box normal"/><text x="800" y="202" text-anchor="middle" class="box-title normal">Encode the task</text><text x="800" y="237" text-anchor="middle" class="box-detail">Qwen chat template · prompt tokens</text>
-  <rect x="1130" y="160" width="400" height="106" rx="20" class="box normal"/><text x="1330" y="202" text-anchor="middle" class="box-title normal">Initialize parameters</text><text x="1330" y="237" text-anchor="middle" class="box-detail">Build sampling map from initial values</text>
-  <rect x="590" y="334" width="420" height="110" rx="20" class="box emphasis"/><text x="800" y="376" text-anchor="middle" class="box-title emphasis">Qwen / vLLM segment</text><text x="800" y="411" text-anchor="middle" class="box-detail">Current settings · tokens · budget</text>
-  <rect x="590" y="492" width="420" height="110" rx="20" class="box jev"/><text x="800" y="534" text-anchor="middle" class="box-title jev">Request Jev Scores</text><text x="800" y="569" text-anchor="middle" class="box-detail">Correctness · relevance · repetition · completeness</text>
-  <rect x="70" y="492" width="400" height="110" rx="20" class="box normal"/><text x="270" y="528" text-anchor="middle" class="box-title normal">Save every round</text><text x="270" y="563" text-anchor="middle" class="box-detail">result.json: requests and decisions</text><text x="270" y="591" text-anchor="middle" class="box-detail">answer.txt: cumulative answers</text>
-  <rect x="590" y="655" width="420" height="96" rx="20" class="box decision"/><text x="800" y="691" text-anchor="middle" class="box-title decision">Can another segment run?</text><text x="800" y="726" text-anchor="middle" class="box-detail">Model or optional Score stop</text><text x="800" y="754" text-anchor="middle" class="box-detail">Or any budget exhausted</text>
-  <rect x="70" y="655" width="400" height="96" rx="20" class="box normal"/><text x="270" y="697" text-anchor="middle" class="box-title normal">Finish this run</text><text x="270" y="732" text-anchor="middle" class="box-detail">Save final status and stop reason</text>
-  <rect x="590" y="804" width="420" height="96" rx="20" class="box decision"/><text x="800" y="846" text-anchor="middle" class="box-title decision">Select experiment mode</text><text x="800" y="881" text-anchor="middle" class="box-detail">Both modes record segment Scores</text>
-  <rect x="70" y="950" width="400" height="118" rx="20" class="box normal"/><text x="270" y="992" text-anchor="middle" class="box-title normal">fixed: keep parameters</text><text x="270" y="1027" text-anchor="middle" class="box-detail">Reuse settings next segment</text>
-  <rect x="1080" y="950" width="450" height="118" rx="20" class="box decision"/><text x="1305" y="992" text-anchor="middle" class="box-title decision">adaptive: inspect feedback first</text><text x="1305" y="1027" text-anchor="middle" class="box-detail">Rollback last change? In a cooldown round?</text>
-  <rect x="850" y="1115" width="300" height="110" rx="20" class="box normal"/><text x="1000" y="1157" text-anchor="middle" class="box-title normal">Restore or keep</text><text x="1000" y="1192" text-anchor="middle" class="box-detail">Revert or defer changes</text>
-  <rect x="1220" y="1115" width="310" height="110" rx="20" class="box jev"/><text x="1375" y="1157" text-anchor="middle" class="box-title jev">Jev selects actions</text><text x="1375" y="1192" text-anchor="middle" class="box-detail">Legal type-specific Choices</text>
-  <rect x="1220" y="1265" width="310" height="110" rx="20" class="box jev"/><text x="1375" y="1301" text-anchor="middle" class="box-title jev">Choose exact values</text><text x="1375" y="1336" text-anchor="middle" class="box-detail">Extra Jev Choice if needed</text><text x="1375" y="1364" text-anchor="middle" class="box-detail">Bounded step candidates</text>
-  <rect x="590" y="1405" width="420" height="100" rx="20" class="box emphasis"/><text x="800" y="1447" text-anchor="middle" class="box-title emphasis">Prepare the next segment</text><text x="800" y="1482" text-anchor="middle" class="box-detail">New settings reach the next vLLM request</text>
-  <text x="505" y="688" class="tag">No</text>
-  <text x="817" y="784" class="tag">Yes</text>
-  <text x="932" y="1097" class="tag">rollback / cooldown</text>
-  <text x="1360" y="1097" class="tag">ready to adjust</text>
-  <text x="1380" y="1248" class="tag">value needed</text>
-  <text x="70" y="1540" fill="#8eaabf" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="17">Scores describe text already generated; rollback restores settings, not text.</text>
+  <rect width="1800" height="3250" rx="28" fill="#081522"/>
+  <text x="65" y="75" fill="#ecf7ff" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="47" font-weight="700">One run: Jev-guided segmented inference</text>
+  <text x="67" y="120" fill="#aac8dc" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="23">From initial parameters to the next segment · one task and seed</text>
+  <path d="M65 138 H1725" stroke="#365b78" stroke-width="2"/>
+  <path d="M900 263 V298" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M900 412 V447" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M900 561 V596" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M900 710 V745" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M900 859 V894" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M900 1029 V1064" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M560 802 H30 V1759 H65" class="edge branch" marker-end="url(#arrowhead)"/>
+  <path d="M560 961 H485" class="edge record" marker-end="url(#arrowhead)"/>
+  <path d="M900 1178 V1213" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M560 1270 H485" class="edge record" marker-end="url(#arrowhead)"/>
+  <path d="M900 1327 V1362" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M560 1429 H485" class="edge record" marker-end="url(#arrowhead)"/>
+  <path d="M900 1497 V1532" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M900 1667 V1702" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M560 1759 H485" class="edge branch" marker-end="url(#arrowhead)"/>
+  <path d="M900 1816 V1851" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M560 1908 H485" class="edge branch" marker-end="url(#arrowhead)"/>
+  <path d="M900 1965 V2000" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M560 2057 H485" class="edge branch" marker-end="url(#arrowhead)"/>
+  <path d="M1240 2057 H1305" class="edge branch" marker-end="url(#arrowhead)"/>
+  <path d="M1515 2135 V2170" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M1515 2284 V2319" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M1515 2433 V2468" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M1515 2603 V2638" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M1515 2752 V2787" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M1515 2901 V2936" class="edge " marker-end="url(#arrowhead)"/>
+  <path d="M1305 2695 H1268 V2993 H1305" class="edge bypass" marker-end="url(#arrowhead)"/>
+  <path d="M1305 2068 H1278 V3138 H1240" class="edge bypass" marker-end="url(#arrowhead)"/>
+  <path d="M1725 2993 H1770 V3142 H1240" class="edge branch" marker-end="url(#arrowhead)"/>
+  <path d="M275 1965 V3060 H530 V3142 H560" class="edge branch" marker-end="url(#arrowhead)"/>
+  <path d="M350 2114 V3030 H500 V3110 H560" class="edge branch" marker-end="url(#arrowhead)"/>
+  <path d="M900 3199 V3223 H1780 V1121 H1240" class="edge loop" marker-end="url(#arrowhead)"/>
+  <g><rect x="560" y="155" width="680" height="108" rx="20" class="node start"/>
+    <text x="900" y="190" text-anchor="middle" class="node-title">Run run.py run</text>
+    <text x="900" y="225" text-anchor="middle" class="node-detail">cli.main loads tasks and seeds</text><text x="900" y="253" text-anchor="middle" class="node-detail">Jev feedback may update next-round settings</text>
+  </g>
+  <g><rect x="560" y="298" width="680" height="114" rx="20" class="node normal"/>
+    <text x="900" y="333" text-anchor="middle" class="node-title">Load and validate three inputs</text>
+    <text x="900" y="368" text-anchor="middle" class="node-detail">config.json · parameters.json</text><text x="900" y="396" text-anchor="middle" class="node-detail">jev_questions.json → controls and Score rubrics</text>
+  </g>
+  <g><rect x="560" y="447" width="680" height="114" rx="20" class="node normal"/>
+    <text x="900" y="482" text-anchor="middle" class="node-title">Build initial sampling map</text>
+    <text x="900" y="517" text-anchor="middle" class="node-detail">initial_parameters: name → initial</text><text x="900" y="545" text-anchor="middle" class="node-detail">request_parameters: name → api_name</text>
+  </g>
+  <g><rect x="560" y="596" width="680" height="114" rx="20" class="node normal"/>
+    <text x="900" y="631" text-anchor="middle" class="node-title">Prepare Qwen and run records</text>
+    <text x="900" y="666" text-anchor="middle" class="node-detail">PythonBackend holds one vLLM model</text><text x="900" y="694" text-anchor="middle" class="node-detail">Encode task; create result.json / answer.txt</text>
+  </g>
+  <g><rect x="560" y="745" width="680" height="114" rx="20" class="node decision"/>
+    <text x="900" y="780" text-anchor="middle" class="node-title">May this round generate?</text>
+    <text x="900" y="815" text-anchor="middle" class="node-detail">Check rounds, remaining tokens, context</text><text x="900" y="843" text-anchor="middle" class="node-detail">and Jev request budget</text>
+  </g>
+  <g><rect x="560" y="894" width="680" height="135" rx="20" class="node emphasis"/>
+    <text x="900" y="929" text-anchor="middle" class="node-title">Build generation_request</text>
+    <text x="900" y="964" text-anchor="middle" class="node-detail">prompt = prompt tokens + prior output token IDs</text><text x="900" y="992" text-anchor="middle" class="node-detail">max_tokens = smallest remaining limit; seed + step</text>
+  </g>
+  <g><rect x="65" y="894" width="420" height="135" rx="20" class="node record"/>
+    <text x="275" y="929" text-anchor="middle" class="node-title">Save before generation</text>
+    <text x="275" y="964" text-anchor="middle" class="node-detail">rounds[].applied_parameters</text><text x="275" y="992" text-anchor="middle" class="node-detail">rounds[].generation_request</text>
+  </g>
+  <g><rect x="560" y="1064" width="680" height="114" rx="20" class="node emphasis"/>
+    <text x="900" y="1099" text-anchor="middle" class="node-title">Generate one vLLM segment</text>
+    <text x="900" y="1134" text-anchor="middle" class="node-detail">Pass native fields to SamplingParams</text><text x="900" y="1162" text-anchor="middle" class="node-detail">LLM.generate returns token IDs and finish reason</text>
+  </g>
+  <g><rect x="560" y="1213" width="680" height="114" rx="20" class="node normal"/>
+    <text x="900" y="1248" text-anchor="middle" class="node-title">Validate, append, decode</text>
+    <text x="900" y="1283" text-anchor="middle" class="node-detail">Append new IDs to accumulated token sequence</text><text x="900" y="1311" text-anchor="middle" class="node-detail">Produce full generated text and recent segment</text>
+  </g>
+  <g><rect x="65" y="1213" width="420" height="114" rx="20" class="node record"/>
+    <text x="275" y="1248" text-anchor="middle" class="node-title">Save answer snapshot</text>
+    <text x="275" y="1283" text-anchor="middle" class="node-detail">rounds[].answer_snapshot</text><text x="275" y="1311" text-anchor="middle" class="node-detail">answer.txt: cumulative answer by round</text>
+  </g>
+  <g><rect x="560" y="1362" width="680" height="135" rx="20" class="node jev"/>
+    <text x="900" y="1397" text-anchor="middle" class="node-title">Jev call ①: four Scores</text>
+    <text x="900" y="1432" text-anchor="middle" class="node-detail">score_request: task / generated / recent / step</text><text x="900" y="1460" text-anchor="middle" class="node-detail">Correctness · relevance · repetition · completeness</text>
+  </g>
+  <g><rect x="65" y="1362" width="420" height="135" rx="20" class="node record"/>
+    <text x="275" y="1397" text-anchor="middle" class="node-title">Save Score request and result</text>
+    <text x="275" y="1432" text-anchor="middle" class="node-detail">evaluation_request / response</text><text x="275" y="1460" text-anchor="middle" class="node-detail">Elapsed time and Jev call count</text>
+  </g>
+  <g><rect x="560" y="1532" width="680" height="135" rx="20" class="node normal"/>
+    <text x="900" y="1567" text-anchor="middle" class="node-title">Parse Scores and compute utility</text>
+    <text x="900" y="1602" text-anchor="middle" class="node-detail">Validate answers/probabilities; map 0–4 to 0–1</text><text x="900" y="1630" text-anchor="middle" class="node-detail">Invert repetition; calculate weighted utility</text>
+  </g>
+  <g><rect x="560" y="1702" width="680" height="114" rx="20" class="node decision"/>
+    <text x="900" y="1737" text-anchor="middle" class="node-title">Should this run stop now?</text>
+    <text x="900" y="1772" text-anchor="middle" class="node-detail">Model stop / optional Score stop</text><text x="900" y="1800" text-anchor="middle" class="node-detail">Token, context, round, or Jev budget reached</text>
+  </g>
+  <g><rect x="65" y="1702" width="420" height="114" rx="20" class="node finish"/>
+    <text x="275" y="1737" text-anchor="middle" class="node-title">Finish and save final status</text>
+    <text x="275" y="1772" text-anchor="middle" class="node-detail">stop_reason and rounds remain in result.json</text><text x="275" y="1800" text-anchor="middle" class="node-detail">Generated text remains in answer.txt</text>
+  </g>
+  <g><rect x="560" y="1851" width="680" height="114" rx="20" class="node decision"/>
+    <text x="900" y="1886" text-anchor="middle" class="node-title">Did the last change lower utility?</text>
+    <text x="900" y="1921" text-anchor="middle" class="node-detail">Compare current utility with pre-change utility</text><text x="900" y="1949" text-anchor="middle" class="node-detail">Revert only beyond rollback.score_drop</text>
+  </g>
+  <g><rect x="65" y="1851" width="420" height="114" rx="20" class="node normal"/>
+    <text x="275" y="1886" text-anchor="middle" class="node-title">Restore prior parameters</text>
+    <text x="275" y="1921" text-anchor="middle" class="node-detail">Generated text remains unchanged</text><text x="275" y="1949" text-anchor="middle" class="node-detail">Restored values apply next segment</text>
+  </g>
+  <g><rect x="560" y="2000" width="680" height="114" rx="20" class="node decision"/>
+    <text x="900" y="2035" text-anchor="middle" class="node-title">Still in the cooldown period?</text>
+    <text x="900" y="2070" text-anchor="middle" class="node-detail">Check last_change and cooldown_rounds</text><text x="900" y="2098" text-anchor="middle" class="node-detail">Skip new Jev Choices while cooling down</text>
+  </g>
+  <g><rect x="65" y="2000" width="420" height="114" rx="20" class="node normal"/>
+    <text x="275" y="2035" text-anchor="middle" class="node-title">Keep current parameters</text>
+    <text x="275" y="2070" text-anchor="middle" class="node-detail">No new change this round</text><text x="275" y="2098" text-anchor="middle" class="node-detail">Reuse current values next segment</text>
+  </g>
+  <g><rect x="1305" y="2000" width="420" height="135" rx="20" class="node emphasis"/>
+    <text x="1515" y="2035" text-anchor="middle" class="node-title">Build type-specific actions</text>
+    <text x="1515" y="2070" text-anchor="middle" class="node-detail">Numeric / nullable numeric / boolean / enum</text><text x="1515" y="2098" text-anchor="middle" class="node-detail">String, list, map; offer feasible choices only</text>
+  </g>
+  <g><rect x="1305" y="2170" width="420" height="114" rx="20" class="node jev"/>
+    <text x="1515" y="2205" text-anchor="middle" class="node-title">Jev call ②: choose actions</text>
+    <text x="1515" y="2240" text-anchor="middle" class="node-detail">direction_request groups parameter Choices</text><text x="1515" y="2268" text-anchor="middle" class="node-detail">Each includes current value, meaning, and Scores</text>
+  </g>
+  <g><rect x="1305" y="2319" width="420" height="114" rx="20" class="node normal"/>
+    <text x="1515" y="2354" text-anchor="middle" class="node-title">Validate direction Choices</text>
+    <text x="1515" y="2389" text-anchor="middle" class="node-detail">parse_choices checks options and probabilities</text><text x="1515" y="2417" text-anchor="middle" class="node-detail">keep needs no exact-value question</text>
+  </g>
+  <g><rect x="1305" y="2468" width="420" height="135" rx="20" class="node normal"/>
+    <text x="1515" y="2503" text-anchor="middle" class="node-title">Generate legal exact values</text>
+    <text x="1515" y="2538" text-anchor="middle" class="node-detail">Numeric: one to three bounded steps</text><text x="1515" y="2566" text-anchor="middle" class="node-detail">Other types: reviewed candidates or direct switch</text>
+  </g>
+  <g><rect x="1305" y="2638" width="420" height="114" rx="20" class="node decision"/>
+    <text x="1515" y="2673" text-anchor="middle" class="node-title">More than one exact candidate?</text>
+    <text x="1515" y="2708" text-anchor="middle" class="node-detail">Single-target actions resolve directly</text><text x="1515" y="2736" text-anchor="middle" class="node-detail">Multiple values require a value_request</text>
+  </g>
+  <g><rect x="1305" y="2787" width="420" height="114" rx="20" class="node jev"/>
+    <text x="1515" y="2822" text-anchor="middle" class="node-title">Jev call ③: choose exact values</text>
+    <text x="1515" y="2857" text-anchor="middle" class="node-detail">Select among program-generated legal options</text><text x="1515" y="2885" text-anchor="middle" class="node-detail">chosen_values maps back to real parameter values</text>
+  </g>
+  <g><rect x="1305" y="2936" width="420" height="114" rx="20" class="node emphasis"/>
+    <text x="1515" y="2971" text-anchor="middle" class="node-title">Commit this round’s decision</text>
+    <text x="1515" y="3006" text-anchor="middle" class="node-detail">Controller.commit merges actual changes</text><text x="1515" y="3034" text-anchor="middle" class="node-detail">Save pending state for next-round feedback</text>
+  </g>
+  <g><rect x="560" y="3085" width="680" height="114" rx="20" class="node emphasis"/>
+    <text x="900" y="3120" text-anchor="middle" class="node-title">Prepare the next round</text>
+    <text x="900" y="3155" text-anchor="middle" class="node-detail">Copy decision.parameters; set will_execute</text><text x="900" y="3183" text-anchor="middle" class="node-detail">New values reach the next generation_request</text>
+  </g>
+  <text x="505" y="1746" class="edge-label">Yes</text>
+  <text x="918" y="1840" class="edge-label">No</text>
+  <text x="505" y="1895" class="edge-label">rollback</text>
+  <text x="918" y="1988" class="edge-label">No</text>
+  <text x="505" y="2045" class="edge-label">cooldown</text>
+  <text x="1248" y="2044" class="edge-label">ready to adjust</text>
+  <text x="1535" y="2768" class="edge-label">multiple values</text>
+  <text x="1215" y="2773" class="edge-label">one target / no extra call</text>
+  <text x="1250" y="2130" class="edge-label">no adjustable options: keep</text>
 </svg>

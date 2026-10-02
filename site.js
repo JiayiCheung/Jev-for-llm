@@ -18,7 +18,7 @@ const copy = {
     methodThreeTitle: "下一段生效并记录",
     methodThreeBody: "参数变化只作用于下一段。result.json 记录请求、反馈和实际使用的参数；answer.txt 保留每轮结束时的累计答案。",
     workflowTitle: "完整流程",
-    workflowAlt: "Jev 分段推理的完整流程图：初始化、生成、评分、分支决策与下一段参数反馈",
+    workflowAlt: "单次 run 的完整流程图：初始化参数、vLLM 分段生成、Jev 评分和选择、回退冷却、记录与下一轮参数反馈",
     evaluationTitle: "实验结果",
     resourcesTitle: "代码与复现", resourcesBody: "环境搭建、配置文件格式、全部运行模式与输出字段见 README；参数类型和调用链在实现文档中说明。",
     parametersDoc: "参数示例 ↗", implementationDoc: "实现说明 ↗", footer: "研究原型 · 代码见仓库"
@@ -42,7 +42,7 @@ const copy = {
     methodThreeTitle: "Apply and record the next step",
     methodThreeBody: "Changes take effect on the next segment only. result.json keeps requests, feedback, and applied settings; answer.txt retains the cumulative answer after each round.",
     workflowTitle: "Full workflow",
-    workflowAlt: "Full Jev-guided inference workflow: initialization, generation, scoring, branching decisions, and feedback to the next segment",
+    workflowAlt: "Full single-run workflow: parameter initialization, segmented vLLM generation, Jev scoring and choices, rollback, records, and next-round feedback",
     evaluationTitle: "Experimental results",
     resourcesTitle: "Code and reproduction", resourcesBody: "See the README for setup, configuration, run modes, and outputs. The supporting docs describe parameter types and the call chain.",
     parametersDoc: "Parameter examples ↗", implementationDoc: "Implementation notes ↗", footer: "Research prototype · code in the repository"
@@ -62,7 +62,7 @@ function render(language) {
     link.href = `https://github.com/JiayiCheung/Jev-for-llm/blob/main/${paths[link.dataset.doc]}`;
   });
   const workflowImage = document.querySelector("[data-workflow-image]");
-  const workflowPath = `workflow_${language}.svg?v=2`;
+  const workflowPath = `workflow_${language}.svg?v=3`;
   workflowImage.src = workflowPath;
   workflowImage.alt = strings.workflowAlt;
   document.querySelector("[data-workflow-link]").href = workflowPath;

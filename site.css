@@ -74,7 +74,7 @@ footer { border-top: 1px solid var(--line); padding-top: 18px; padding-bottom: 3
   .feedback-mobile { display: block; margin: 0; font-size: 13px; font-weight: 600; }
   .method-points { grid-template-columns: 1fr; }
   .workflow-section { padding-top: 48px; }
-  .workflow-frame img { width: 900px; max-width: none; }
+  .workflow-frame img { width: 1200px; max-width: none; }
   .paper-section { padding-top: 42px; }
   .comparison { margin-top: 45px; padding-bottom: 45px; }
   footer { flex-wrap: wrap; }
