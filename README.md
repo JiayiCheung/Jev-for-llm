@@ -231,6 +231,14 @@ python run.py summarize
 
 Prints one JSON summary per result: task, seed, mode, status, stop reason, generated-token count, Jev-call count, elapsed seconds and file path. It makes no API/model call. It still loads the current configuration and tasks, so those files must remain valid. It searches immediate result subdirectories of the configured outputs directory; it does not grade answers.
 
+**dashboard — visualize experiment results**
+
+```shell
+python run.py dashboard
+```
+
+Opens an interactive dashboard of saved experiment results.
+
 ## 5. First run and results
 
 1. Edit paths, direct API key and input tasks.

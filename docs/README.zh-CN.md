@@ -250,6 +250,14 @@ python run.py summarize
 
 每个结果输出一条 JSON 摘要，包括题目、种子、模式、状态、停止原因、生成 token 数、Jev 调用数、耗时和路径。不调用模型或 API，但仍会加载当前配置和题目，因此这些文件需保持有效。只查找 outputs 直接子目录内的结果，不执行答案判分。
 
+**dashboard：可视化实验结果**
+
+```shell
+python run.py dashboard
+```
+
+打开已保存实验结果的交互式可视化仪表盘。
+
 ## 5. 首次运行与结果解读
 
 1. 修改路径和题目文件，并提供本地 `jev.api_key` 或 `TYPESAFE_API_KEY`。
