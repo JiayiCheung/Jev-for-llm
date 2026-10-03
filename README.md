@@ -90,7 +90,7 @@ Jev-for-llm/
   README.md              Project guide
 ```
 
-Code style: [black](https://black.readthedocs.io/) and [isort](https://pycqa.github.io/isort/) with the settings in `pyproject.toml`, checked with `flake8` (`.flake8`). Run `python -m black . && python -m isort . && python -m flake8 && python -m pytest tests` before committing.
+Code style: [black](https://black.readthedocs.io/) and [isort](https://pycqa.github.io/isort/) with the settings in `pyproject.toml`, checked with `flake8` (using a local, untracked `.flake8`). Run `python -m black . && python -m isort . && python -m flake8 && python -m pytest tests` before committing.
 
 ## 3. File formats and configuration
 

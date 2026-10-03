@@ -1,9 +1,0 @@
-__pycache__/
-*.pyc
-.env
-.venv/
-outputs/
-*.log
-/.vscode/
-# Downloaded benchmark files; scripts/prepare_gsm8k.py fetches and checks them.
-/data/raw/

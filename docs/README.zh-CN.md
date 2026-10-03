@@ -90,7 +90,7 @@ Jev-for-llm/
   README.md              项目说明
 ```
 
-代码风格：使用 [black](https://black.readthedocs.io/) 和 [isort](https://pycqa.github.io/isort/)（设置见 `pyproject.toml`），用 `flake8`（`.flake8`）检查。提交前运行 `python -m black . && python -m isort . && python -m flake8 && python -m pytest tests`。
+代码风格：使用 [black](https://black.readthedocs.io/) 和 [isort](https://pycqa.github.io/isort/)（设置见 `pyproject.toml`），用 `flake8`（使用本地未入库的 `.flake8`）检查。提交前运行 `python -m black . && python -m isort . && python -m flake8 && python -m pytest tests`。
 
 ## 3. 文件格式与配置
 
