@@ -78,15 +78,19 @@ Activate your environment before running, or explicitly use its Python executabl
 ```text
 Jev-for-llm/
   run.py                 Command-line entry point
-  config.json            Paths, engine, budgets, API key and policy thresholds
+  config.json            Paths, engine, API key and policy settings
   parameters.json        Selected native fields, types, defaults and actions
   jev_questions.json     Four evaluator rubrics
-  pyproject.toml         Package/build metadata
+  pyproject.toml         Package metadata and black / isort settings
   data/                  Active tasks and sampling provenance
   src/jev_vllm/          Implementation
+  scripts/               Offline analysis and dashboard builders
+  tests/                 Unit tests (python -m pytest tests)
   outputs/               Generated experiment records
   README.md              Project guide
 ```
+
+Code style: [black](https://black.readthedocs.io/) and [isort](https://pycqa.github.io/isort/) with the settings in `pyproject.toml`, checked with `flake8` (`.flake8`). Run `python -m black . && python -m isort . && python -m flake8 && python -m pytest tests` before committing.
 
 ## 3. File formats and configuration
 
@@ -98,8 +102,8 @@ Jev-for-llm/
 | jev | HTTPS base URL, endpoint, model, direct API key, timeout, rubric file, request text view (how much generated text Choice requests carry) |
 | generation | Thinking template, segment/total token budgets, round cap |
 | parameters_file | Path to the selected parameter definitions |
-| experiment | fixed/adaptive/stop_only/baseline mode, seeds, per-experiment Jev call cap |
-| policy | stopping thresholds, revert rule (consecutive utility declines), same-direction cap, dormancy of idle parameters, utility weights |
+| experiment | fixed/adaptive/baseline mode, seeds |
+| policy | restart from a checkpoint (Jev sends a long reasoning back), revert rule (consecutive utility declines), same-direction cap, dormancy of idle parameters, utility weights |
 
 The project always uses the active Python interpreter and native vLLM. `engine` settings apply when constructing the model; selected SamplingParams apply to the next generation call.
 
@@ -126,10 +130,10 @@ The endpoint is `https://api.typesafe.ai/v1/systemone`, with Bearer authenticati
   "stage": "completion",
   "type": "number",
   "initial": 0.6,
-  "minimum": 0,
+  "minimum": 0.2,
   "maximum": 2,
   "description": "Sampling randomness",
-  "control": {"window": [0, 2], "denominator": 20}
+  "control": {"window": [0.2, 2], "denominator": 18}
 }
 ```
 
@@ -147,7 +151,7 @@ Tasks belong in `data/tasks.jsonl`, not in the rubric file. JSONL is strict JSON
 {"id":"example_001","prompt":"Solve 2x + 3 = 11.","reference_answer":"4"}
 ```
 
-Unique nonempty `id` and `prompt` are required. Reference fields are optional metadata and are not sent to Qwen/Jev. The included sample contains ten original English GSM8K **training** questions sampled without replacement using seed 42; provenance is in `data/gsm8k_sample_manifest.json`. It is not a full held-out benchmark. No automatic reference-answer grader is implemented.
+Unique nonempty `id` and `prompt` are required. Reference fields are optional metadata and are not sent to Qwen/Jev. The included tasks are 400 original English GSM8K **test** questions sampled without replacement with seed 42 (`python scripts/prepare_gsm8k.py --split test --count 400 --seed 42`; add `--download` to fetch the raw file into the git-ignored `data/raw/`). Provenance and the SHA256 of the source file are in `data/gsm8k_sample_manifest.json`; `data/tasks_train10.jsonl` keeps the earlier ten-question training sample for quick smoke tests. Answers are graded offline by `scripts/analyze_results.py` (numeric exact match on an explicit final answer); the grader is not used while generating.
 
 ## 4. Run modes
 
@@ -161,16 +165,15 @@ Run these commands yourself from the directory containing `run.py`:
 | `python run.py smoke` | Generate eight tokens for the first task | Yes | No |
 | `python run.py run` | Run the configured fixed/adaptive mode | Yes | Yes |
 | `python run.py run --mode baseline` | Generate with fixed parameters and no Jev requests | Yes | No |
-| `python run.py run --mode stop_only` | Fixed parameters plus score-based early stopping; an early stop inside the thinking block closes it and generates the final answer | Yes | Yes |
 | `python run.py compare` | Run fixed then adaptive for each task/seed | Yes | Yes |
 | `python run.py summarize` | List saved experiment summaries | No | No |
 | `python run.py dashboard` | Open an interactive visualization of experiment results | No | No |
 
 An alternate configuration is selected with `python run.py run --config "E:\Experiments\config.json"`; copy its referenced files or update their paths too.
 
-For an adaptive experiment set `experiment.mode` to `adaptive`; for a fixed experiment set it to `fixed`. `compare` chooses both automatically and disables score-based early stopping in both. Both groups still call Jev. Use `run --mode baseline` for a separate no-Jev reference run; [result analysis](docs/analysis.md) explains how to match it to an adaptive batch.
+For an adaptive experiment set `experiment.mode` to `adaptive`; for a fixed experiment set it to `fixed`. `compare` chooses both automatically. Both groups still call Jev. Use `run --mode baseline` for a separate no-Jev reference run; [result analysis](docs/analysis.md) explains how to match it to an adaptive batch.
 
-For each task and seed, fixed mode uses at most one Jev Score request per round; adaptive uses at most three requests (Score, direction Choice, exact-value Choice). Each run is also capped by `max_jev_calls`. With 10 tasks, one seed and eight rounds, fixed ≤80 requests, adaptive ≤240, compare ≤320. Model stopping or choosing keep reduces the actual count.
+For each task and seed, fixed mode uses at most one Jev Score request per round; adaptive uses at most three requests (Score, direction Choice, exact-value Choice). There is no cap on rounds or requests: a run ends when the model stops or the context window is full, so the request count grows with how long the model keeps reasoning.
 
 ### Command recipes
 
@@ -222,7 +225,7 @@ This runs every task and seed using `experiment.mode`, makes Jev calls, and crea
 python run.py compare
 ```
 
-The command overrides the configured mode, runs fixed then adaptive for each task/seed, and turns off score-based stopping in both. It produces separate result folders, not a statistical comparison report. Both groups call Jev; inference and evaluator costs can therefore roughly double relative to one mode, subject to actual stopping.
+The command overrides the configured mode, runs fixed then adaptive for each task/seed. It produces separate result folders, not a statistical comparison report. Both groups call Jev; inference and evaluator costs can therefore roughly double relative to one mode, subject to actual stopping.
 
 **summarize — inspect existing records**
 
@@ -259,7 +262,7 @@ For the two-group experiment, replace the last command with `python run.py compa
 
 Each task/seed/mode creates `outputs/<timestamp>_<mode>/result.json` and `answer.txt`. `answer.txt` contains a labeled cumulative-answer snapshot after every generated round; the last snapshot is the final full answer. `result.json` also keeps each round's `answer_snapshot`. Inspect `rounds[].scores`, `decision`, `applied_parameters`, `generation_request`, timing and stop reason. A proposed adjustment is only confirmed by the next round's actual request. `decision_will_execute` alone does not prove the next call succeeded.
 
-Normal completion means the loop ended, not that the answer is correct. Stopping may be caused by the model, token/context/round/call budgets, or enabled score stopping. Ctrl+C normally records interruption; forced process termination can leave `status: running`. Partial records remain. Rerunning starts over; there is no resume or automatic paid retry. An exception stops the remaining experiment loop.
+Normal completion means the loop ended, not that the answer is correct. A run ends when the model stops or the context window is full (`stop_reason` `model_stop` or `context_budget`). Ctrl+C normally records interruption; forced process termination can leave `status: running`. Partial records remain. Rerunning starts over; there is no resume or automatic paid retry. An exception stops the remaining experiment loop.
 
 For a local log (after the key is configured):
 

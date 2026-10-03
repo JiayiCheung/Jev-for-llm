@@ -1,12 +1,16 @@
+"""Loading and validation of config.json, parameters.json and the rubrics."""
+
 import json
-import re
 import math
+import re
 from pathlib import Path
 from urllib.parse import urlparse
-from .parameters import initial_parameters, validate_parameters, request_parameters
+
+from .parameters import initial_parameters, request_parameters, validate_parameters
 
 
 def numeric(value, lo, hi, name, integer=False):
+    """Raise ValueError unless `value` is a finite number in [lo, hi]."""
     if (
         type(value) not in (int, float)
         or not math.isfinite(value)
@@ -17,34 +21,13 @@ def numeric(value, lo, hi, name, integer=False):
 
 
 def validate(c):
+    """Check a loaded configuration and return it; raise ValueError on the first problem."""
     g, s, p, e = c["generation"], c["sampling"], c["policy"], c["experiment"]
 
-    if "backend" in g or "python" in c["paths"]:
-        raise ValueError(
-            "Remove generation.backend and paths.python; the active Python interpreter runs vLLM directly"
-        )
-
-    if any(
-        key in p
-        for key in (
-            "rollback_drop",
-            "stop_on_complete",
-            "complete_min",
-            "correct_min",
-            "relevant_min",
-        )
-    ):
-        raise ValueError(
-            "Use policy.stopping and policy.rollback.score_drop (normalized 0-1 units)"
-        )
-
-    if e["mode"] not in ("adaptive", "fixed", "stop_only", "baseline"):
+    if e["mode"] not in ("adaptive", "fixed", "baseline"):
         raise ValueError("Unknown experiment mode")
 
-    for name in ("chunk_tokens", "total_tokens", "max_rounds"):
-        numeric(g[name], 1, 10000000, name, True)
-
-    numeric(e["max_jev_calls"], 1, 1000000, "max_jev_calls", True)
+    numeric(g["chunk_tokens"], 1, 10000000, "chunk_tokens", True)
 
     if not e["seeds"]:
         raise ValueError("Empty seeds")
@@ -55,23 +38,27 @@ def validate(c):
     validate_parameters(c["parameters"])
     request_parameters(s, c["parameters"])
 
-    if any(name in p for name in ("error_max", "correctness_max", "relevance_max", "repetition_min")):
-        raise ValueError("Score trigger thresholds are obsolete; typed Jev Choices now choose changes")
-
-    if "rollback" in p or "cooldown_rounds" in p:
-        raise ValueError(
-            "policy.rollback and policy.cooldown_rounds were replaced by policy.revert "
-            "(consecutive utility declines); remove them"
-        )
+    rs = p["restart"]
+    for name, low in (
+        ("first_check_round", 1),
+        ("recheck_every", 1),
+        ("max_restarts", 0),
+    ):
+        numeric(rs[name], low, 1000000, f"restart.{name}", True)
+    for name in ("probe_rounds", "max_tries"):
+        numeric(rs["difference"][name], 1, 1000, f"restart.difference.{name}", True)
 
     rv = p["revert"]
     if rv["rule"] not in ("consecutive_decrease", "below_best"):
-        raise ValueError("policy.revert.rule must be consecutive_decrease or below_best")
+        raise ValueError(
+            "policy.revert.rule must be consecutive_decrease or below_best"
+        )
     numeric(rv["consecutive_declines"], 1, 10000, "revert.consecutive_declines", True)
-    numeric(p["limits"]["max_same_direction"], 0, 10000, "limits.max_same_direction", True)
+    numeric(
+        p["limits"]["max_same_direction"], 0, 10000, "limits.max_same_direction", True
+    )
     numeric(p["dormancy"]["keep_streak"], 0, 10000, "dormancy.keep_streak", True)
     numeric(p["dormancy"]["skip_rounds"], 0, 10000, "dormancy.skip_rounds", True)
-    numeric(p["stopping"]["final_answer_tokens"], 1, 10000000, "stopping.final_answer_tokens", True)
 
     view = c["jev"]["view"]
     for name in ("keep_full", "head", "tail"):
@@ -79,8 +66,8 @@ def validate(c):
 
     for flag in (
         g["enable_thinking"],
-        p["stopping"]["enabled"],
         rv["enabled"],
+        rs["enabled"],
         view["score"],
         c["engine"]["enforce_eager"],
         c["runtime"]["use_flashinfer_sampler"],
@@ -100,6 +87,14 @@ def validate(c):
             raise ValueError("Invalid base URL")
 
         numeric(c[section]["timeout_seconds"], 1, 3600, "timeout")
+
+    delays = c["jev"]["retry_delays"]
+    if not isinstance(delays, list) or len(delays) > 20:
+        raise ValueError(
+            "jev.retry_delays must be a list of at most 20 waits in seconds"
+        )
+    for delay in delays:
+        numeric(delay, 0, 3600, "jev.retry_delays")
 
     if urlparse(c["jev"]["base_url"]).scheme != "https":
         raise ValueError("Jev requires HTTPS")
@@ -129,10 +124,6 @@ def validate(c):
         ):
             raise ValueError("Invalid Score rubric")
 
-    for dimension in ("completeness", "correctness", "relevance"):
-        name = f"{dimension}_min"
-        numeric(p["stopping"][name], 0, 1, f"policy.stopping.{name} (normalized score)")
-
     return c
 
 
@@ -150,11 +141,10 @@ def strip_line_comments(source):
 
 
 def load_config(path):
+    """Read config.json, parameters.json and the rubrics; validate; absolutize paths."""
     path = Path(path).resolve()
     c = json.loads(strip_line_comments(path.read_text(encoding="utf-8-sig")))
 
-    if "sampling" in c or "bounds" in c["policy"]:
-        raise ValueError("Define parameter values and bounds only in parameters.json")
     parameters_path = (path.parent / c["parameters_file"]).resolve()
     c["parameters_file"] = str(parameters_path)
     c["parameters"] = json.loads(
@@ -162,9 +152,6 @@ def load_config(path):
     )
     validate_parameters(c["parameters"])
     c["sampling"] = initial_parameters(c["parameters"])
-
-    if "questions" in c["jev"]:
-        raise ValueError("Define rubrics in jev.questions_file, not inline questions")
 
     questions_path = (path.parent / c["jev"]["questions_file"]).resolve()
     c["jev"]["questions_file"] = str(questions_path)

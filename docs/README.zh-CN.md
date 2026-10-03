@@ -78,15 +78,19 @@ hf download Qwen/Qwen3-0.6B --local-dir models/Qwen3-0.6B
 ```text
 Jev-for-llm/
   run.py                 命令行入口
-  config.json            路径、引擎、预算、API 密钥和决策阈值
+  config.json            路径、引擎、API 密钥和决策设置
   parameters.json        选中的原生参数、类型、初值和调整规则
   jev_questions.json     四个评分维度的英文指令与等级标准
-  pyproject.toml         Python 包与构建元数据
+  pyproject.toml         Python 包元数据与 black / isort 设置
   data/                  当前运行题目与抽样来源记录
   src/jev_vllm/          核心实现
+  scripts/               离线分析与仪表盘生成脚本
+  tests/                 单元测试（python -m pytest tests）
   outputs/               实验输出
   README.md              项目说明
 ```
+
+代码风格：使用 [black](https://black.readthedocs.io/) 和 [isort](https://pycqa.github.io/isort/)（设置见 `pyproject.toml`），用 `flake8`（`.flake8`）检查。提交前运行 `python -m black . && python -m isort . && python -m flake8 && python -m pytest tests`。
 
 ## 3. 文件格式与配置
 
@@ -98,8 +102,8 @@ Jev-for-llm/
 | jev | HTTPS 地址、接口路径、模型、直接密钥、超时、评分标准文件、请求文本视图（选择类请求携带多少已生成文字） |
 | generation | 思考开关、分段与总 token 预算、轮数上限 |
 | parameters_file | 参数定义文件路径 |
-| experiment | fixed/adaptive/stop_only/baseline 模式、随机种子、每次实验的 Jev 调用上限 |
-| policy | 停止阈值、回退规则（连续效用下降）、同方向连续上限、空转参数休眠、效用权重 |
+| experiment | fixed/adaptive/baseline 模式、随机种子 |
+| policy | 从检查点重来（由 Jev 决定是否让一段很长的推理回退重做）、回退规则（连续效用下降）、同方向连续上限、空转参数休眠、效用权重 |
 
 项目固定使用当前 Python 解释器直接调用 vLLM。`engine` 在创建模型时生效；`parameters.json` 中的 SamplingParams 在下一次生成调用时生效。
 
@@ -126,10 +130,10 @@ Jev-for-llm/
   "stage": "completion",
   "type": "number",
   "initial": 0.6,
-  "minimum": 0,
+  "minimum": 0.2,
   "maximum": 2,
   "description": "Sampling randomness",
-  "control": {"window": [0, 2], "denominator": 20}
+  "control": {"window": [0.2, 2], "denominator": 18}
 }
 ```
 
@@ -156,7 +160,7 @@ Jev-for-llm/
 {"id":"example_001","prompt":"Solve 2x + 3 = 11.","reference_answer":"4"}
 ```
 
-`id` 必须是唯一非空字符串，`prompt` 必须是非空字符串。参考答案是可选元数据，不发送给 Qwen/Jev。仓库附带的样本是 GSM8K **训练集**英文原题，使用随机种子 42 无放回抽取 10 道；抽样记录在 `data/gsm8k_sample_manifest.json`。这不是完整的独立测试集评测，当前也没有自动比对标准答案的判分器。
+`id` 必须是唯一非空字符串，`prompt` 必须是非空字符串。参考答案是可选元数据，不发送给 Qwen/Jev。仓库附带的题目是 GSM8K **测试集**英文原题，使用随机种子 42 无放回抽取 400 道（`python scripts/prepare_gsm8k.py --split test --count 400 --seed 42`，加 `--download` 会把原始文件下载到被 git 忽略的 `data/raw/`）。抽样记录和源文件的 SHA256 在 `data/gsm8k_sample_manifest.json`；`data/tasks_train10.jsonl` 保留了之前的 10 道训练集题，用于快速冒烟测试。答案由 `scripts/analyze_results.py` 离线判分（对显式最终答案做数值精确比对），生成过程中不使用判分器。
 
 ## 4. 运行方式
 
@@ -170,7 +174,6 @@ Jev-for-llm/
 | `python run.py smoke` | 第一题实际生成 8 个 token | 是 | 否 |
 | `python run.py run` | 运行配置指定的 fixed 或 adaptive | 是 | 是 |
 | `python run.py run --mode baseline` | 保持初始参数生成，不调用 Jev | 是 | 否 |
-| `python run.py run --mode stop_only` | 保持初始参数并启用评分提前停止；在思考中途停止时会先闭合思考块再生成最终答案 | 是 | 是 |
 | `python run.py compare` | 每题/种子先 fixed 再 adaptive | 是 | 是 |
 | `python run.py dashboard` | 打开实验结果的交互式可视化仪表盘 | 否 | 否 |
 | `python run.py summarize` | 列出保存的实验摘要 | 否 | 否 |
@@ -181,15 +184,15 @@ Jev-for-llm/
 python run.py run --config "E:\Experiments\config.json"
 ```
 
-同时应复制它引用的文件，或修改引用路径。`run` 根据 `experiment.mode` 选择模式；`compare` 自动跑两种模式，并在两组关闭评分触发的提前停止。**fixed 组仍调用 Jev 记录评分，只是不根据评分调整参数**。`run --mode baseline` 可另跑不调用 Jev 的基线；如何与 adaptive 批次严格配对见[结果分析](analysis.md)。
+同时应复制它引用的文件，或修改引用路径。`run` 根据 `experiment.mode` 选择模式；`compare` 自动跑两种模式。**fixed 组仍调用 Jev 记录评分，只是不根据评分调整参数**。`run --mode baseline` 可另跑不调用 Jev 的基线；如何与 adaptive 批次严格配对见[结果分析](analysis.md)。
 
 Jev 请求数上限为：
 
 ```text
-题目数 × 种子数 × 各模式的 min(max_jev_calls, max_rounds × 每轮最多请求数)
+没有请求数上限：每个运行在模型自己停止或上下文窗口写满时结束，请求数随模型推理的长度增长
 ```
 
-fixed 每轮最多 1 次 Score；adaptive 每轮最多 1 次 Score、1 次方向 Choice、1 次具体值 Choice。10 道题、1 个种子、最多 8 轮时，fixed 上限 80 次、adaptive 上限 240 次、compare 合计上限 320 次，实际还受 `max_jev_calls`（每个实验目录的上限）约束。模型停止、所有参数保持等情况会减少请求。
+fixed 每轮最多 1 次 Score；adaptive 每轮最多 1 次 Score、1 次方向 Choice、1 次具体值 Choice。模型停止、所有参数保持等情况会减少请求。
 
 ### 七个命令分别怎么用
 
@@ -280,7 +283,7 @@ python run.py run
 
 决策只是对下一段的提议，**下一轮实际请求才证明新参数被使用**。`decision_will_execute` 也不能单独证明下一次调用已成功。
 
-`completed` 表示循环正常结束，不代表答案正确。结束可能源于模型、token/上下文/轮数/调用预算，或启用的评分停止。Ctrl+C 通常会保存 interrupted 状态；强制结束进程可能留下 running 状态。程序保留部分记录。中断后用相同配置和批次 ID 执行 `python run.py compare --experiment-id 批次ID --resume`，已完成的题目/种子/模式会跳过；中断的运行从第一段重新开始，不会接续未完成的段。Jev 临时 HTTP 5xx 错误最多额外重试两次，仍失败就停止后续实验。
+`completed` 表示循环正常结束，不代表答案正确。结束源于模型自己停止或上下文窗口写满（`stop_reason` 为 `model_stop` 或 `context_budget`）。Ctrl+C 通常会保存 interrupted 状态；强制结束进程可能留下 running 状态。程序保留部分记录。中断后用相同配置和批次 ID 执行 `python run.py compare --experiment-id 批次ID --resume`，已完成的题目/种子/模式会跳过；中断的运行从第一段重新开始，不会接续未完成的段。Jev 临时 HTTP 5xx 错误最多额外重试两次，仍失败就停止后续实验。
 
 配置好密钥后，可将控制台输出存到本地已有日志目录：
 

@@ -11,7 +11,6 @@ import re
 from collections import Counter
 from pathlib import Path
 
-
 QUALITY_STEPS = {
     "temperature": "control[0,2]/20",
     "top_p": "control[0.01,1]/100",
@@ -78,9 +77,9 @@ def strip_hash_comments(source):
     pattern = r'"(?:\\.|[^"\\])*"|#[^\r\n]*'
     return re.sub(
         pattern,
-        lambda match: " " * len(match.group())
-        if match.group().startswith("#")
-        else match.group(),
+        lambda match: (
+            " " * len(match.group()) if match.group().startswith("#") else match.group()
+        ),
         source,
     )
 
@@ -99,7 +98,10 @@ def value_family(declared_type):
         family = "string"
     elif re.search(r"\b(?:dict|Mapping|OrderedDict)\s*\[", without_null):
         family = "mapping"
-    elif re.search(r"\b(?:list|tuple|set|Sequence|Iterable)\s*\[", without_null) and " | " in without_null:
+    elif (
+        re.search(r"\b(?:list|tuple|set|Sequence|Iterable)\s*\[", without_null)
+        and " | " in without_null
+    ):
         family = "union_with_collection"
     elif re.search(r"\b(?:list|tuple|set|Sequence|Iterable)\s*\[", without_null):
         family = "collection"
@@ -119,9 +121,15 @@ def value_action_family(family, nullable):
     if family == "boolean":
         action, step = "keep/turn_on/turn_off", "no_numeric_step"
     elif family == "float":
-        action, step = "keep/increase/decrease", "requires_verified_bounds_and_control_window"
+        action, step = (
+            "keep/increase/decrease",
+            "requires_verified_bounds_and_control_window",
+        )
     elif family == "integer":
-        action, step = "keep/increase/decrease", "requires_integer_quantization_and_verified_bounds"
+        action, step = (
+            "keep/increase/decrease",
+            "requires_integer_quantization_and_verified_bounds",
+        )
     elif family == "discrete":
         action, step = "keep/select_verified_option", "no_numeric_step"
     elif family == "string":
@@ -129,9 +137,15 @@ def value_action_family(family, nullable):
     elif family == "collection":
         action, step = "keep/add_verified_item/remove_item/clear", "no_numeric_step"
     elif family == "mapping":
-        action, step = "keep/set_verified_entry/remove_entry/clear", "nested_values_need_separate_review"
+        action, step = (
+            "keep/set_verified_entry/remove_entry/clear",
+            "nested_values_need_separate_review",
+        )
     elif family == "union_with_collection":
-        action, step = "keep/select_union_variant/edit_verified_items", "variant_specific_review"
+        action, step = (
+            "keep/select_union_variant/edit_verified_items",
+            "variant_specific_review",
+        )
     else:
         action, step = "manual_schema_review", "no_generic_step"
     if nullable:
@@ -290,7 +304,9 @@ def classify(row, current_names, groups):
     if stage != "per_generation_python":
         choice_pattern = "not_in_current_chunk_controller"
     elif category == "quality_numeric":
-        choice_pattern = "keep/increase/decrease; then choose one of three legal magnitudes"
+        choice_pattern = (
+            "keep/increase/decrease; then choose one of three legal magnitudes"
+        )
     elif name == "min_tokens":
         choice_pattern = "conditional keep/increase/decrease; cap by next call length"
     elif name == "ignore_eos":
@@ -353,7 +369,9 @@ def main():
         raise ValueError(f"Expected 1181 checklist entries; found {len(classified)}")
     if any(row["controller_class"] == "unclassified_route" for row in classified):
         raise ValueError("Some checklist routes still need classification")
-    if {row["name"] for row in classified if row["in_parameters_json"] == "true"} != current_names:
+    if {
+        row["name"] for row in classified if row["in_parameters_json"] == "true"
+    } != current_names:
         raise ValueError("Some configured parameters are missing from SamplingParams")
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -364,7 +382,9 @@ def main():
 
     print(f"Catalog entries: {len(classified)}")
     print(f"Current project parameters: {len(current_names)}")
-    for category, count in sorted(Counter(row["controller_class"] for row in classified).items()):
+    for category, count in sorted(
+        Counter(row["controller_class"] for row in classified).items()
+    ):
         print(f"{category}: {count}")
 
 

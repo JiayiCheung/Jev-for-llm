@@ -1,9 +1,9 @@
 """User-selected completion parameters and typed Choice control metadata."""
 
 from copy import deepcopy
-from .value_schema import kinds, validate_value, validate_schema
-from .jev_requests import parameter_kind
 
+from .jev_requests import parameter_kind
+from .value_schema import kinds, validate_schema, validate_value
 
 # These fields belong to the segmented runner, not the parameter controller.
 RESERVED_FIELDS = {
@@ -21,6 +21,7 @@ RESERVED_FIELDS = {
 
 
 def validate_parameters(specs):
+    """Check every definition in parameters.json (types, bounds, control data)."""
     if not isinstance(specs, list):
         raise ValueError("parameters.json must contain a list")
     names, targets = set(), set()
@@ -32,8 +33,6 @@ def validate_parameters(specs):
         if not isinstance(name, str) or not name or name in names:
             raise ValueError("Parameter names must be unique nonempty strings")
         names.add(name)
-        if "enabled" in spec:
-            raise ValueError(f"{name}: remove enabled; list membership controls inclusion")
         if spec.get("stage") != "completion":
             raise ValueError(
                 f"{name}: this stage needs an adapter; only completion is implemented"
@@ -45,11 +44,14 @@ def validate_parameters(specs):
         targets.add(target)
         validate_schema(spec)
         validate_value(spec["initial"], spec)
-        if "adjustments" in spec:
-            raise ValueError(f"{name}: replace fixed adjustments with typed control metadata")
         control = spec.get("control")
-        if not isinstance(control, dict) or type(control.get("adaptive", True)) is not bool:
-            raise ValueError(f"{name}: control must be an object with optional boolean adaptive")
+        if (
+            not isinstance(control, dict)
+            or type(control.get("adaptive", True)) is not bool
+        ):
+            raise ValueError(
+                f"{name}: control must be an object with optional boolean adaptive"
+            )
         kind = parameter_kind(spec)
         if kind == "unsupported" and control.get("adaptive", True):
             raise ValueError(f"{name}: unsupported adaptive parameter type")
@@ -64,8 +66,12 @@ def validate_parameters(specs):
                 or type(denominator) is not int
                 or denominator < 1
             ):
-                raise ValueError(f"{name}: invalid numeric control window or denominator")
-            if "integer" in (spec["type"] if isinstance(spec["type"], list) else [spec["type"]]):
+                raise ValueError(
+                    f"{name}: invalid numeric control window or denominator"
+                )
+            if "integer" in (
+                spec["type"] if isinstance(spec["type"], list) else [spec["type"]]
+            ):
                 if round((window[1] - window[0]) / denominator) < 1:
                     raise ValueError(f"{name}: integer step must be at least one")
             if kind == "numeric" and "disabled_value" in control:
@@ -77,12 +83,20 @@ def validate_parameters(specs):
                     raise ValueError(f"{name}: enable_value outside control window")
         if kind == "nullable_numeric" and control.get("adaptive", True):
             if "candidates" in control:
-                raise ValueError(f"{name}: use enable_candidates for nullable numeric controls")
+                raise ValueError(
+                    f"{name}: use enable_candidates for nullable numeric controls"
+                )
             candidates = control.get("enable_candidates")
             if not isinstance(candidates, list) or not candidates:
                 raise ValueError(f"{name}: enable_candidates must be a nonempty list")
             for item in candidates:
-                validate_value(item, {**spec, "type": "integer" if "integer" in kinds(spec) else "number"})
+                validate_value(
+                    item,
+                    {
+                        **spec,
+                        "type": "integer" if "integer" in kinds(spec) else "number",
+                    },
+                )
                 if not control["window"][0] <= item <= control["window"][1]:
                     raise ValueError(f"{name}: enable candidate outside control window")
         if kind in ("string", "collection"):
@@ -100,17 +114,39 @@ def validate_parameters(specs):
             if not isinstance(entries, list):
                 raise ValueError(f"{name}: entries must be a list")
             for item in entries:
+                shape = set(item) if isinstance(item, dict) else set()
+                if shape == {"token_id", "value"}:
+                    ids = [item["token_id"]]
+                elif shape == {"label", "group", "token_ids", "value"}:
+                    ids = item["token_ids"]
+                else:
+                    raise ValueError(f"{name}: invalid reviewed token entry")
                 if (
-                    not isinstance(item, dict)
-                    or set(item) != {"token_id", "value"}
-                    or type(item["token_id"]) is not int
-                    or item["token_id"] < 0
+                    not isinstance(ids, list)
+                    or not ids
+                    or any(type(i) is not int or i < 0 for i in ids)
                 ):
                     raise ValueError(f"{name}: invalid reviewed token entry")
                 validate_value(item["value"], spec["additional_properties"])
+        if kind == "preset":
+            presets = control["presets"]
+            if not isinstance(presets, list) or not presets:
+                raise ValueError(f"{name}: presets need at least one entry")
+            if any(
+                not isinstance(p, dict) or set(p) != {"label", "value"} for p in presets
+            ):
+                raise ValueError(f"{name}: every preset needs a label and a value")
+            labels = [p["label"] for p in presets]
+            if any(not isinstance(x, str) or not x for x in labels) or len(
+                set(labels)
+            ) != len(labels):
+                raise ValueError(f"{name}: preset labels must be unique strings")
+            for preset in presets:
+                validate_value(preset["value"], spec)
 
 
 def initial_parameters(specs):
+    """The initial value of every listed parameter."""
     return {s["name"]: deepcopy(s["initial"]) for s in specs}
 
 

@@ -1,0 +1,26 @@
+{
+  "dataset": "GSM8K",
+  "split": "train",
+  "source_url": "https://raw.githubusercontent.com/openai/grade-school-math/master/grade_school_math/data/train.jsonl",
+  "source_sha256": "17f347dc51477c50d4efb83959dbb7c56297aba886e5544ee2aaed3024813465",
+  "population_count": 7473,
+  "sample_count": 10,
+  "sampling_seed": 42,
+  "sampling_method": "Python random.Random(42).sample without replacement",
+  "row_indices_zero_based": [
+    5238,
+    912,
+    204,
+    6074,
+    2253,
+    2006,
+    1828,
+    1143,
+    6033,
+    839
+  ],
+  "task_file_sha256": "fced1c995587f1bad611869e620c4d9e41848056bf564e47b2ffd35fc2713ec1",
+  "prompt_transform": "None; original English question retained",
+  "purpose": "Development sample, not a full benchmark evaluation",
+  "previous_tasks_backup": "tasks.before_gsm8k.jsonl"
+}

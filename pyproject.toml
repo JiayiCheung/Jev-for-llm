@@ -15,3 +15,10 @@ where = ["src"]
 [tool.black]
 line-length = 88
 target-version = ["py312"]
+# The dashboard code is left as it is.
+extend-exclude = "(src/jev_vllm/dashboard.py|scripts/build_dashboard.py|scripts/build_run_dashboard.py|scripts/dashboard|tests/test_build_run_dashboard.py|tests/test_dashboard_launch.py)"
+
+[tool.isort]
+profile = "black"
+line_length = 88
+skip_glob = ["src/jev_vllm/dashboard.py", "scripts/build_dashboard.py", "scripts/build_run_dashboard.py", "scripts/dashboard/*", "tests/test_build_run_dashboard.py", "tests/test_dashboard_launch.py"]

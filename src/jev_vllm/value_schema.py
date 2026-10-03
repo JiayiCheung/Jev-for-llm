@@ -2,7 +2,6 @@
 
 import math
 
-
 TYPES = {
     "number": (int, float),
     "integer": (int,),
@@ -15,6 +14,7 @@ TYPES = {
 
 
 def kinds(schema):
+    """The JSON types a schema allows, as a list."""
     value = schema.get("type")
     result = value if isinstance(value, list) else [value]
     if not result or any(not isinstance(k, str) or k not in TYPES for k in result):
@@ -38,6 +38,7 @@ def equal(left, right):
 
 
 def validate_schema(schema):
+    """Check that a value schema is well formed."""
     if not isinstance(schema, dict):
         raise ValueError("Value schema must be an object")
     allowed = kinds(schema)
@@ -77,6 +78,7 @@ def validate_schema(schema):
 
 
 def validate_value(value, schema, path=None):
+    """Raise ValueError unless `value` satisfies `schema` (type, bounds, choices, items)."""
     path = path or schema.get("name", "value")
     if not any(type(value) in TYPES[k] for k in kinds(schema)):
         raise ValueError(f"{path}: expected {schema['type']}")

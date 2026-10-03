@@ -53,8 +53,13 @@
     # TypeSafe API key read directly by the client; redacted from experiment records.
     "api_key": "",
 
-    # Timeout in seconds for each evaluation request; no automatic retry.
+    # Timeout in seconds for each evaluation request; a read timeout is not retried.
     "timeout_seconds": 90,
+
+    # Seconds to wait before each retry after a dropped connection (TLS EOF, reset) or a 5xx
+    # status; the list length is the number of retries (10 here, each wait longer than the last,
+    # about 14 minutes in total). Read timeouts are never retried.
+    "retry_delays": [2, 5, 10, 20, 40, 60, 90, 120, 180, 300],
 
     # Rubric file path, resolved relative to this configuration file.
     "questions_file": "jev_questions.json",
@@ -77,56 +82,29 @@
     # Pass this boolean to the Qwen chat template before generation.
     "enable_thinking": true,
 
-    # Maximum newly generated tokens per segment before evaluation.
-    "chunk_tokens": 256,
-
-    # Total new-token budget across all segments, including reasoning.
-    "total_tokens": 8192,
-
-    # Maximum generation/evaluation rounds per experiment.
-    "max_rounds": 32
+    # Tokens generated per segment before each evaluation. A run has no other limit: it ends
+    # when the model stops or the context window (engine.max_model_len) is full.
+    "chunk_tokens": 256
 
   },
 
   # Selected parameters, initial values, and type-specific Choice controls.
   "parameters_file": "parameters.json",
 
-  # Experimental mode, random seeds, and evaluator call budget.
+  # Experimental mode and random seeds.
   "experiment": {
-    # adaptive adjusts parameters; fixed keeps them; stop_only keeps them but may stop early; baseline calls no Jev.
+    # adaptive adjusts parameters; fixed keeps them but still scores; baseline calls no Jev.
     "mode": "adaptive",
 
     # Initial seeds. Each segment uses its initial seed plus the segment index.
     "seeds": [
       42 # Experiment seed 1.
-    ],
-
-    # Maximum evaluation requests per task, seed, and mode; not a global cap.
-    "max_jev_calls": 96
+    ]
 
   },
 
   # Controller settings. Stopping and rollback use normalized Score values.
   "policy": {
-
-    # Optional early stopping. All three normalized-score thresholds must be met.
-    # Applies to adaptive and stop_only; compare turns it off. When it fires inside the
-    # thinking block, the runner closes the block and generates the final answer.
-    "stopping": {
-      "enabled": false,
-
-      # Required normalized completeness score (0-1).
-      "completeness_min": 0.9,
-
-      # Required normalized correctness score (0-1).
-      "correctness_min": 0.85,
-
-      # Required normalized relevance score (0-1).
-      "relevance_min": 0.75,
-
-      # Token cap for the closing answer generated after an early stop.
-      "final_answer_tokens": 256
-    },
 
     # Restore the best-so-far parameters after consecutive utility declines.
     # No magnitude threshold: only the direction of change between rounds counts.
@@ -139,6 +117,24 @@
 
       # k.
       "consecutive_declines": 3
+    },
+
+    # Let Jev send a long reasoning back to an earlier checkpoint. From round first_check_round
+    # (and then every recheck_every rounds after a continue) Jev chooses between continue and
+    # going back to the start or to any earlier checkpoint (= a point where it was asked and said
+    # continue). After going back, a fresh attempt of probe_rounds rounds is generated with a new
+    # seed and Jev judges whether it follows a different approach from the abandoned one; if not,
+    # it is discarded and retried, at most max_tries times. Applies whenever Jev is called
+    # (fixed and adaptive); a run stops asking after max_restarts restarts.
+    "restart": {
+      "enabled": true,
+      "first_check_round": 20,
+      "recheck_every": 20,
+      "max_restarts": 5,
+      "difference": {
+        "probe_rounds": 2,
+        "max_tries": 3
+      }
     },
 
     # Ratchet guard: after this many same-direction moves of one parameter, that direction

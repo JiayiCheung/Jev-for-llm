@@ -1,7 +1,6 @@
-from copy import deepcopy
+"""Per-run controller: utility, revert, same-direction cap and dormancy."""
 
-ADAPTIVE_MODES = ("adaptive",)
-STOPPING_MODES = ("adaptive", "stop_only")
+from copy import deepcopy
 
 
 class Controller:
@@ -19,6 +18,7 @@ class Controller:
 
     # ---- scores -------------------------------------------------------------
     def utility(self, scores):
+        """Weighted quality in [0, 1]; repetition is reversed."""
         s = {k: v["normalized"] for k, v in scores.items()}
         weights = self.c["utility_weights"]
         favorable = {**s, "repetition": 1 - s["repetition"]}
@@ -30,7 +30,9 @@ class Controller:
             reference = self.best_utility  # None on the first round
         else:
             reference = self.prev_utility
-        self.declines = self.declines + 1 if reference is not None and utility < reference else 0
+        self.declines = (
+            self.declines + 1 if reference is not None and utility < reference else 0
+        )
         if self.best_parameters is None or utility > self.best_utility:
             self.best_utility, self.best_parameters = utility, deepcopy(parameters)
         self.prev_utility = utility
@@ -43,40 +45,26 @@ class Controller:
             and parameters != self.best_parameters
         )
 
-    def _stop_reached(self, s):
-        st = self.c["stopping"]
-        return (
-            st["enabled"]
-            and s["completeness"] >= st["completeness_min"]
-            and s["correctness"] >= st["correctness_min"]
-            and s["relevance"] >= st["relevance_min"]
-        )
-
     def decide(self, scores, parameters, step):
+        """Observe one scored round; return the decision (action, parameters, reason)."""
         current = deepcopy(parameters)
         result = {
             "action": "hold",
             "parameters": current,
             "reason": "no_trigger",
-            "stop": False,
         }
         utility = self.utility(scores)
         result["utility"] = utility
-        s = {k: v["normalized"] for k, v in scores.items()}
 
-        if self.mode not in ADAPTIVE_MODES:
+        if self.mode != "adaptive":
             result["reason"] = "fixed_parameter_control"
-            if self.mode in STOPPING_MODES and self._stop_reached(s):
-                result.update(action="stop", stop=True, reason="score_complete")
             return result
 
+        # Track the best utility so far and the run of consecutive declines.
         self._observe(utility, parameters)
         result["declines"] = self.declines
 
-        if self._stop_reached(s):
-            result.update(action="stop", stop=True, reason="score_complete")
-            return result
-
+        # Too many declines in a row: go back to the parameters that scored best.
         if self._should_revert(parameters):
             result.update(
                 action="rollback",
@@ -93,7 +81,9 @@ class Controller:
     # ---- guards used when building direction questions ----------------------
     def active_specs(self, step):
         """Parameters that are awake at this step (dormant ones are not asked)."""
-        return [p for p in self.parameters if self.asleep_until.get(p["name"], 0) <= step]
+        return [
+            p for p in self.parameters if self.asleep_until.get(p["name"], 0) <= step
+        ]
 
     def blocked(self):
         """name -> directions that must not be offered (same-direction ratchet cap)."""
@@ -112,7 +102,10 @@ class Controller:
         for name, direction in directions.items():
             if direction == "keep":
                 self.keep_streak[name] = self.keep_streak.get(name, 0) + 1
-                if dormancy["keep_streak"] and self.keep_streak[name] >= dormancy["keep_streak"]:
+                if (
+                    dormancy["keep_streak"]
+                    and self.keep_streak[name] >= dormancy["keep_streak"]
+                ):
                     self.asleep_until[name] = step + 1 + dormancy["skip_rounds"]
                     self.keep_streak[name] = 0
                 continue
@@ -125,6 +118,7 @@ class Controller:
 
     # ---- applying a chosen change -------------------------------------------
     def commit(self, result, before, changes, step):
+        """Apply the changes Jev chose to the decision, unless they change nothing."""
         if not changes:
             result["reason"] = "jev_kept_parameters"
             return result

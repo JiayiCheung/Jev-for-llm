@@ -1,7 +1,10 @@
+"""Validation and normalisation of Jev Score answers and the record copies."""
+
 import math
 
 
 def number(value, low, high):
+    """Return `value` as a float; it must be a finite number in [low, high]."""
     if (
         isinstance(value, bool)
         or not isinstance(value, (int, float))
@@ -14,6 +17,7 @@ def number(value, low, high):
 
 
 def parse_scores(response, questions):
+    """Validate Jev's Score answers and add each score divided by its highest level."""
     result = {}
 
     for name in questions:
@@ -63,7 +67,11 @@ def choice_response(response):
     """Record Choice outputs without the redundant confidence field."""
     result = {
         "answers": {
-            name: {key: answer[key] for key in ("type", "choice", "probabilities") if key in answer}
+            name: {
+                key: answer[key]
+                for key in ("type", "choice", "probabilities")
+                if key in answer
+            }
             for name, answer in response["answers"].items()
         }
     }
