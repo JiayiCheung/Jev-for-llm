@@ -9,7 +9,7 @@
 1. `config.load_config` 读取 `config.json`、`parameters.json` 和 `jev_questions.json`；`parameters.validate_parameters` 核对类型、边界与 `control` 元数据。
 2. `backend.PythonBackend` 用 Qwen 聊天模板编码题目。每一段前，`runner.execute` 把已生成的 token ID 接回提示词，并按分段、总预算和上下文窗口计算本段 `max_tokens`。
 3. `jev_requests.score_request` 生成四道 Score 的 JSON，`state={task, generated, recent, step}`。`adapters.parse_scores` 检查分数和概率分布并归一化到 0～1；重复性越高越差。
-4. `policy.Controller.decide` 先处理 fixed、上轮回退、可选的评分停止和冷却。若还有下一段，adaptive 调用 `jev_requests.direction_request`，为每个当前可调字段构建符合其类型的 Choice。输入包含本轮 Score 和当前参数，不含标准答案或剩余 token 预算。
+4. `policy.Controller.decide` 先处理 fixed（stop_only 额外检查评分停止）、可选的评分停止和回退判定。若还有下一段，adaptive 调用 `jev_requests.direction_request`，为每个当前可调字段构建符合其类型的 Choice。输入包含本轮 Score 和当前参数，不含标准答案或剩余 token 预算。
 5. 如果所选动作需要具体值，`jev_requests.value_request` 再生成合法候选。数值方向给出 1、2、3 个步长的值；布尔切换等只有一个目标值时不再发第三次请求。`parse_choices` 检查所选选项及完整概率分布；`Controller.commit` 将改动留给下一段。
 6. 下一轮的 `applied_parameters` 和 `generation_request` 才能证明改动真正传入 vLLM。`decision_will_execute=false` 表示实验先结束了。每轮的累计 `answer_snapshot` 也会按轮次写入 `answer.txt`。
 
@@ -21,4 +21,4 @@ fixed 每段最多一次 Jev 请求；adaptive 每段最多三次。`max_jev_cal
 
 当前 20 项是 [vLLM 完整清单分类](vllm_catalog_taxonomy.zh-CN.md)中的代表子集；清单出现不代表运行效果已经证实。按初值有 17 项可生成方向 Choice，只有 `stop_token_ids`、`allowed_token_ids`、`logit_bias` 要等核实过的 token 候选才可调。其中有些属于观测或输出格式开关，不是答案质量旋钮。程序只实现当前的 `stage: completion` 路径。`doctor` 不加载模型，只用已安装的 vLLM 构造 `SamplingParams`。`output_kind` 字符串会先转换为原生 `RequestOutputKind`。
 
-回退比较相邻片段的加权归一化综合分，下降超过配置值时恢复先前参数。它不删除已生成文字，也不能证明某个参数造成分数变化；同轮改动多项尤其难归因。fixed 仍调用 Jev 保存 Score；compare 按题目和种子配对 fixed/adaptive，并关闭两组的评分提前停止。当前没有独立的标准答案判分器，`status: completed` 不等于答对。
+回退统计相邻片段加权归一化综合分的连续下降次数（不设幅度阈值），达到 `policy.revert.consecutive_declines` 次后恢复历史最优效用对应的参数；当前参数已经是它们时不回退。同一参数朝同一方向连续移动 `policy.limits.max_same_direction` 次后，不再提供该方向，直到它向相反方向移动；连续 `policy.dormancy.keep_streak` 次答 keep 的参数，接下来 `skip_rounds` 轮不再被提问。在思考中途提前停止时，会先闭合思考块再生成最终答案，使这次运行有可判分的显式答案。它不删除已生成文字，也不能证明某个参数造成分数变化；同轮改动多项尤其难归因。fixed 仍调用 Jev 保存 Score；compare 按题目和种子配对 fixed/adaptive，并关闭两组的评分提前停止。当前没有独立的标准答案判分器，`status: completed` 不等于答对。

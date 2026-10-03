@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.analyze_results import analyze, grade_answer, summarize_run
+from scripts.analyze_results import analyze, classify_ending, grade_answer, summarize_run
 
 
 def result(mode, answer, *, batch="batch-001", status="completed", change=False):
@@ -100,6 +100,10 @@ class AnalyzeResultsTests(unittest.TestCase):
             self.assertEqual(summary["fixed_correct"], 1)
             self.assertEqual(summary["adaptive_correct"], 0)
             self.assertEqual(summary["accuracy_delta_pp"], -100.0)
+            self.assertEqual(summary["accuracy_resolution_pp"], 100.0)
+            self.assertEqual(summary["discordant_pairs"], {"adaptive_only": 0, "fixed_only": 1})
+            self.assertEqual(summary["endings"]["fixed"], {"answered": 1})
+            self.assertEqual(summary["answered_pairs"], 1)
             self.assertEqual(summary["paired_executed_changes"], 1)
             self.assertEqual(summary["unbatched_runs"], 1)
             self.assertEqual(summary["planned_pairs"], 2)
@@ -114,6 +118,14 @@ class AnalyzeResultsTests(unittest.TestCase):
             summary = analyze(outputs, reports, "batch-001")
             self.assertEqual(summary["paired_completed"], 0)
             self.assertEqual(summary["ambiguous_pairs"], 1)
+
+    def test_ending_separates_answers_from_failed_endings(self):
+        self.assertEqual(classify_ending("model_stop", "correct"), "answered")
+        self.assertEqual(classify_ending("score_complete", "incorrect"), "answered")
+        self.assertEqual(classify_ending("model_stop", "ungraded"), "stopped_no_answer")
+        self.assertEqual(classify_ending("token_budget", "ungraded"), "budget_exhausted")
+        self.assertEqual(classify_ending("jev_call_budget", "ungraded"), "budget_exhausted")
+        self.assertEqual(classify_ending("score_complete", "ungraded"), "no_answer_other")
 
     def test_mismatch_and_missing_usage_are_not_silent_zeroes(self):
         with tempfile.TemporaryDirectory() as temp:

@@ -54,6 +54,21 @@ class PythonBackend:
             "max_model_len": self.config["engine"]["max_model_len"],
         }
 
+    def encode(self, text):
+        """Plain-text token IDs (no chat template, no special tokens)."""
+        self.load()
+        return self.tokenizer.encode(text, add_special_tokens=False)
+
+    def reset_cache(self):
+        """Drop the prefix cache so every run starts from the same engine state.
+
+        vLLM returns False when KV blocks are still in use; that must not be
+        silently ignored, otherwise paired arms can again share cached prefixes.
+        """
+        self.load()
+        if not self.engine.reset_prefix_cache():
+            raise RuntimeError("vLLM could not reset the prefix cache (KV blocks still in use)")
+
     def decode(self, tokens):
         # Keep raw generated text for evaluation, independently of display settings.
         return self.tokenizer.decode(tokens, skip_special_tokens=False)

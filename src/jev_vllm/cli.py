@@ -29,7 +29,7 @@ def main():
     )
     parser.add_argument("--experiment-id", help="Batch ID for run/compare; generated automatically when omitted.")
     parser.add_argument("--resume", action="store_true", help="With --experiment-id, skip completed runs in the same batch.")
-    parser.add_argument("--mode", choices=["baseline", "fixed", "adaptive"], help="Override the mode for a single `run` batch.")
+    parser.add_argument("--mode", choices=["baseline", "fixed", "stop_only", "adaptive"], help="Override the mode for a single `run` batch.")
     parser.add_argument("--baseline-compare-dir", type=Path, help="Baseline/adaptive paired report for dashboard.")
     parser.add_argument("--fixed-compare-dir", type=Path, help="Fixed/adaptive paired report for dashboard.")
     parser.add_argument("--dashboard-dir", type=Path, help="Directory for generated dashboard files.")
@@ -62,6 +62,8 @@ def main():
         c["experiment"]["mode"] = args.mode
         if args.mode == "baseline":
             c["policy"]["stopping"]["enabled"] = False
+        elif args.mode == "stop_only":
+            c["policy"]["stopping"]["enabled"] = True
     tasks = load_tasks(c["paths"]["dataset"])
     if args.start_task:
         if args.command not in ("run", "compare"):
@@ -160,7 +162,7 @@ def main():
     cap = len(tasks) * len(c["experiment"]["seeds"]) * sum(
         min(
             c["experiment"]["max_jev_calls"],
-            c["generation"]["max_rounds"] * (0 if mode == "baseline" else 1 if mode == "fixed" else 3),
+            c["generation"]["max_rounds"] * (0 if mode == "baseline" else 1 if mode in ("fixed", "stop_only") else 3),
         )
         for mode in modes
     )
@@ -225,10 +227,12 @@ def main():
                 if args.command == "compare":
                     conf["policy"]["stopping"]["enabled"] = False
 
+                vllm.reset_cache()  # every run starts from an empty prefix cache
                 run_experiment(conf, task, seed, vllm, jev, {
                     "id": experiment_id, "run_id": uuid4().hex,
                     "pair_id": f"{experiment_id}:{task['id']}:{seed}",
                     "command": args.command,
+                    "prefix_cache_reset": True,
                 })
 
     return 0

@@ -8,6 +8,7 @@ import importlib.metadata
 from .adapters import parse_scores, score_response, choice_response
 from .jev_requests import (
     score_request, direction_request, parse_choices, value_request, chosen_values,
+    evaluation_view, objective,
 )
 from .policy import Controller
 from .parameters import request_parameters, check_backend_parameters
@@ -39,6 +40,44 @@ def load_tasks(path):
     return tasks
 
 
+def close_thinking(c, vllm, prefix, ids, params, seed, step, tok, record, save):
+    """After an early stop inside the thinking block: close it and generate the answer.
+
+    Without this an early stop leaves no explicit final answer to grade. The closing
+    tokens and the answer are part of the output and are counted in the token totals.
+    """
+    closing = vllm.encode("\n</think>\n\n")
+    room = min(
+        c["policy"]["stopping"]["final_answer_tokens"],
+        tok["max_model_len"] - len(prefix) - len(ids) - len(closing),
+    )
+    if room <= 0:
+        return
+    row = {"step": step + 1, "finalize": True, "token_start": len(ids), "applied_parameters": deepcopy(params)}
+    record["rounds"].append(row)
+    request = {
+        "prompt": prefix + ids + closing,
+        "max_tokens": room,
+        **request_parameters(params, c["parameters"]),
+        "seed": seed + step + 1,
+    }
+    vllm.validate_parameters({k: v for k, v in request.items() if k != "prompt"})
+    row["generation_request"] = request
+    save()
+    start = time.perf_counter()
+    raw = vllm.generate(request)
+    row.update(generation_response=raw, generation_seconds=time.perf_counter() - start)
+    new = raw["choices"][0].get("token_ids")
+    if not isinstance(new, list) or len(new) > room or any(type(i) is not int or i < 0 for i in new):
+        raise ValueError("Invalid generated token IDs")
+    ids += closing + new
+    text = vllm.decode(ids)
+    record.update(generated=text, generated_token_count=len(ids), generated_token_ids=ids, finalized=True)
+    row["token_end"] = len(ids)
+    row["answer_snapshot"] = text
+    save()
+
+
 def execute(c, task, seed, vllm, jev, record, save):
     check_backend_parameters(vllm, c["parameters"])
     g = c["generation"]
@@ -49,8 +88,10 @@ def execute(c, task, seed, vllm, jev, record, save):
         raise ValueError("Invalid prompt tokens")
 
     record["prompt_token_count"] = len(prefix)
-    ids, text = [], ""
+    ids, text, segments = [], "", []
     params = deepcopy(c["sampling"])
+    view_cfg = c["jev"]["view"]
+    goal = objective(c["policy"]["utility_weights"])
     baseline = c["experiment"]["mode"] == "baseline"
     ctl = None if baseline else Controller(c["policy"], c["parameters"], c["experiment"]["mode"])
 
@@ -117,6 +158,7 @@ def execute(c, task, seed, vllm, jev, record, save):
         full = vllm.decode(ids)
         recent = full[len(text) :] if full.startswith(text) else choice["text"]
         text = full
+        segments.append(recent)
         record.update(
             generated=text, generated_token_count=len(ids), generated_token_ids=ids
         )
@@ -135,7 +177,8 @@ def execute(c, task, seed, vllm, jev, record, save):
             if record.get("stop_reason"):
                 return
             continue
-        evaluation = score_request(task["prompt"], text, recent, step, c["jev"])
+        view = evaluation_view(segments, view_cfg["keep_full"], view_cfg["head"], view_cfg["tail"])
+        evaluation = score_request(task["prompt"], view if view_cfg["score"] else text, recent, step, c["jev"])
         row["evaluation_request"] = evaluation
         record["jev_calls"] += 1
         save()
@@ -167,8 +210,8 @@ def execute(c, task, seed, vllm, jev, record, save):
 
         if reason is None and decision["reason"] == "choice_ready":
             request_choice, offered = direction_request(
-                task["prompt"], text, recent, step, scores, params,
-                c["parameters"], c["jev"],
+                task["prompt"], view, recent, step, scores, params,
+                ctl.active_specs(step), c["jev"], ctl.blocked(), goal,
             )
             if request_choice is not None:
                 if record["jev_calls"] >= c["experiment"]["max_jev_calls"]:
@@ -183,9 +226,12 @@ def execute(c, task, seed, vllm, jev, record, save):
                     row["direction_seconds"] = time.perf_counter() - choice_start
                     save()
                     selected = parse_choices(raw_choice, request_choice["questions"])
+                    ctl.note_directions(
+                        {offered[q]["name"]: d for q, d in selected.items()}, step
+                    )
                     exact_request, exact, immediate = value_request(
-                        task["prompt"], text, recent, step, scores, params,
-                        selected, offered, c["jev"],
+                        task["prompt"], view, recent, step, scores, params,
+                        selected, offered, c["jev"], goal,
                     )
                     changes = immediate
                     if exact_request is not None:
@@ -212,6 +258,8 @@ def execute(c, task, seed, vllm, jev, record, save):
         )
 
         if reason:
+            if reason == "score_complete" and g["enable_thinking"] and "</think>" not in text:
+                close_thinking(c, vllm, prefix, ids, params, seed, step, tok, record, save)
             record["stop_reason"] = reason
             save()
 

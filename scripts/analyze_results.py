@@ -6,13 +6,13 @@ import hashlib
 import json
 import re
 import sqlite3
-from collections import defaultdict
+from collections import Counter as collections_counter, defaultdict
 from copy import deepcopy
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 
-VERSION = 3
+VERSION = 4
 NUMBER = r"[-+]?(?:\d+(?:,\d{3})*(?:\.\d+)?|\.\d+)"
 
 
@@ -67,6 +67,20 @@ def grade_answer(task, generated):
     return {"grade_status": "correct" if prediction == truth else "incorrect", "grade_reason": "gsm8k_numeric_exact", "predicted_answer": str(prediction), "reference_answer": str(truth)}
 
 
+BUDGET_STOPS = {"token_budget", "context_budget", "round_budget", "token_or_context_budget", "jev_call_budget"}
+
+
+def classify_ending(stop_reason, grade_status):
+    """answered: an explicit final answer exists. The other three are not savings."""
+    if grade_status in ("correct", "incorrect"):
+        return "answered"
+    if stop_reason == "model_stop":
+        return "stopped_no_answer"
+    if stop_reason in BUDGET_STOPS:
+        return "budget_exhausted"
+    return "no_answer_other"
+
+
 def summarize_run(record, path):
     config = record.get("config") or {}
     task = record.get("task") or {}
@@ -110,7 +124,10 @@ def summarize_run(record, path):
         "jev_output_tokens": usage_out if usage_missing == 0 else None, "jev_usage_missing_calls": usage_missing,
         "generation_seconds": round(generation_seconds, 6), "jev_seconds": round(jev_seconds, 6),
         "elapsed_seconds": record.get("elapsed_seconds"), "executed_changes": executed_changes,
+        "finalized": bool(record.get("finalized")),
         **grade,
+        "ending": classify_ending(record.get("stop_reason"), grade["grade_status"]),
+        "tokens_to_correct": record.get("generated_token_count") if grade["grade_status"] == "correct" else None,
     }
 
 
@@ -204,9 +221,24 @@ def analyze(outputs, report_dir, experiment_id=None):
         if pair["status"] != "paired":
             issues.append({"type": pair["status"], "key": "/".join(map(str, key)), "detail": "Inspect runs.csv for all candidates"})
         pairs.append(pair)
-    if summary["paired_graded"]:
-        summary["accuracy_delta_pp"] = round(100 * (summary["adaptive_correct"] - summary["fixed_correct"]) / summary["paired_graded"], 4)
+    n = summary["paired_graded"]
+    if n:
+        summary["accuracy_delta_pp"] = round(100 * (summary["adaptive_correct"] - summary["fixed_correct"]) / n, 1)
+        summary["accuracy_resolution_pp"] = round(100 / n, 2)
+        summary["accuracy_counts"] = {"fixed": summary["fixed_correct"], "adaptive": summary["adaptive_correct"]}
+        both = [(p["fixed_grade"], p["adaptive_grade"]) for p in pairs if p["status"] == "paired" and p["fixed_grade"] in ("correct", "incorrect") and p["adaptive_grade"] in ("correct", "incorrect")]
+        summary["discordant_pairs"] = {"adaptive_only": sum(f == "incorrect" and a == "correct" for f, a in both),
+                                       "fixed_only": sum(f == "correct" and a == "incorrect" for f, a in both)}
     paired = [p for p in pairs if p["status"] == "paired"]
+    ending = {r["path"]: r["ending"] for r in selected}
+    summary["endings"] = {mode: dict(sorted(collections_counter(ending[p[f"{mode}_path"]] for p in paired).items())) for mode in ("fixed", "adaptive")}
+    answered = [p for p in paired if ending[p["fixed_path"]] == "answered" and ending[p["adaptive_path"]] == "answered"]
+    summary["answered_pairs"] = len(answered)
+    summary["answered_cost_means"] = {
+        field: {mode: round(sum(p[f"{mode}_{field}"] for p in answered) / len(answered), 4) for mode in ("fixed", "adaptive")}
+        for field in ("generated_tokens", "generation_seconds", "jev_input_tokens")
+        if answered and all(isinstance(p[f"{mode}_{field}"], (int, float)) for p in answered for mode in ("fixed", "adaptive"))
+    } if answered else None
     for field in ("jev_calls", "elapsed_seconds", "generated_tokens", "generation_seconds", "jev_seconds"):
         summary[field + "_mean"] = {
             mode: round(sum(p[f"{mode}_{field}"] for p in paired if isinstance(p[f"{mode}_{field}"], (int, float))) / len(paired), 4)

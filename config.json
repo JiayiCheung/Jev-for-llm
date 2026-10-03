@@ -57,7 +57,18 @@
     "timeout_seconds": 90,
 
     # Rubric file path, resolved relative to this configuration file.
-    "questions_file": "jev_questions.json"
+    "questions_file": "jev_questions.json",
+
+    # How much generated text the Choice requests (direction/value) carry. The newest
+    # keep_full segments are sent whole; older segments keep head+tail characters.
+    "view": {
+      "keep_full": 3,
+      "head": 120,
+      "tail": 200,
+
+      # Apply the same shortening to Score requests. Off: Score input is unchanged.
+      "score": false
+    }
 
   },
 
@@ -82,7 +93,7 @@
 
   # Experimental mode, random seeds, and evaluator call budget.
   "experiment": {
-    # adaptive adjusts parameters; fixed keeps the initial sampling parameters.
+    # adaptive adjusts parameters; fixed keeps them; stop_only keeps them but may stop early; baseline calls no Jev.
     "mode": "adaptive",
 
     # Initial seeds. Each segment uses its initial seed plus the segment index.
@@ -98,28 +109,49 @@
   # Controller settings. Stopping and rollback use normalized Score values.
   "policy": {
 
-    # Number of subsequent rounds without a new adjustment after a change.
-    "cooldown_rounds": 1,
-
     # Optional early stopping. All three normalized-score thresholds must be met.
+    # Applies to adaptive and stop_only; compare turns it off. When it fires inside the
+    # thinking block, the runner closes the block and generates the final answer.
     "stopping": {
-      # compare overrides this switch to false.
       "enabled": false,
 
       # Required normalized completeness score (0-1).
-      "completeness_min": 1.0,
+      "completeness_min": 0.9,
 
       # Required normalized correctness score (0-1).
-      "correctness_min": 0.75,
+      "correctness_min": 0.85,
 
       # Required normalized relevance score (0-1).
-      "relevance_min": 0.75
+      "relevance_min": 0.75,
+
+      # Token cap for the closing answer generated after an early stop.
+      "final_answer_tokens": 256
     },
 
-    # Restore previous parameters if the composite quality score decreases.
-    "rollback": {
-      # Absolute drop on the normalized 0-1 composite scale; not a percentage.
-      "score_drop": 0.15
+    # Restore the best-so-far parameters after consecutive utility declines.
+    # No magnitude threshold: only the direction of change between rounds counts.
+    "revert": {
+      "enabled": true,
+
+      # consecutive_decrease: k rounds in a row each lower than the previous one.
+      # below_best: k rounds in a row lower than the best utility so far (more sensitive).
+      "rule": "consecutive_decrease",
+
+      # k.
+      "consecutive_declines": 3
+    },
+
+    # Ratchet guard: after this many same-direction moves of one parameter, that direction
+    # is no longer offered until the parameter moves the other way. 0 disables the guard.
+    "limits": {
+      "max_same_direction": 3
+    },
+
+    # A parameter answered keep this many rounds in a row is not asked for skip_rounds rounds.
+    # 0 disables dormancy.
+    "dormancy": {
+      "keep_streak": 3,
+      "skip_rounds": 5
     },
 
     # Nonnegative importance weights (0-1); at least one must be positive.

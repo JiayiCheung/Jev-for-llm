@@ -38,7 +38,7 @@ def validate(c):
             "Use policy.stopping and policy.rollback.score_drop (normalized 0-1 units)"
         )
 
-    if e["mode"] not in ("adaptive", "fixed", "baseline"):
+    if e["mode"] not in ("adaptive", "fixed", "stop_only", "baseline"):
         raise ValueError("Unknown experiment mode")
 
     for name in ("chunk_tokens", "total_tokens", "max_rounds"):
@@ -58,13 +58,30 @@ def validate(c):
     if any(name in p for name in ("error_max", "correctness_max", "relevance_max", "repetition_min")):
         raise ValueError("Score trigger thresholds are obsolete; typed Jev Choices now choose changes")
 
-    numeric(p["rollback"]["score_drop"], 0, 1, "rollback.score_drop")
+    if "rollback" in p or "cooldown_rounds" in p:
+        raise ValueError(
+            "policy.rollback and policy.cooldown_rounds were replaced by policy.revert "
+            "(consecutive utility declines); remove them"
+        )
 
-    numeric(p["cooldown_rounds"], 0, 10000, "cooldown_rounds", True)
+    rv = p["revert"]
+    if rv["rule"] not in ("consecutive_decrease", "below_best"):
+        raise ValueError("policy.revert.rule must be consecutive_decrease or below_best")
+    numeric(rv["consecutive_declines"], 1, 10000, "revert.consecutive_declines", True)
+    numeric(p["limits"]["max_same_direction"], 0, 10000, "limits.max_same_direction", True)
+    numeric(p["dormancy"]["keep_streak"], 0, 10000, "dormancy.keep_streak", True)
+    numeric(p["dormancy"]["skip_rounds"], 0, 10000, "dormancy.skip_rounds", True)
+    numeric(p["stopping"]["final_answer_tokens"], 1, 10000000, "stopping.final_answer_tokens", True)
+
+    view = c["jev"]["view"]
+    for name in ("keep_full", "head", "tail"):
+        numeric(view[name], 0, 10000000, f"jev.view.{name}", True)
 
     for flag in (
         g["enable_thinking"],
         p["stopping"]["enabled"],
+        rv["enabled"],
+        view["score"],
         c["engine"]["enforce_eager"],
         c["runtime"]["use_flashinfer_sampler"],
     ):

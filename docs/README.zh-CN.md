@@ -95,11 +95,11 @@ Jev-for-llm/
 | paths | 模型、题目文件、输出目录 |
 | engine | LLM 构造参数：精度、上下文长度、序列容量、显存比例、eager 模式、张量并行 |
 | runtime | 可选 FlashInfer 采样开关 |
-| jev | HTTPS 地址、接口路径、模型、直接密钥、超时、评分标准文件 |
+| jev | HTTPS 地址、接口路径、模型、直接密钥、超时、评分标准文件、请求文本视图（选择类请求携带多少已生成文字） |
 | generation | 思考开关、分段与总 token 预算、轮数上限 |
 | parameters_file | 参数定义文件路径 |
-| experiment | fixed/adaptive 模式、随机种子、每次实验的 Jev 调用上限 |
-| policy | 冷却轮数、停止阈值、回退阈值、效用权重 |
+| experiment | fixed/adaptive/stop_only/baseline 模式、随机种子、每次实验的 Jev 调用上限 |
+| policy | 停止阈值、回退规则（连续效用下降）、同方向连续上限、空转参数休眠、效用权重 |
 
 项目固定使用当前 Python 解释器直接调用 vLLM。`engine` 在创建模型时生效；`parameters.json` 中的 SamplingParams 在下一次生成调用时生效。
 
@@ -170,6 +170,7 @@ Jev-for-llm/
 | `python run.py smoke` | 第一题实际生成 8 个 token | 是 | 否 |
 | `python run.py run` | 运行配置指定的 fixed 或 adaptive | 是 | 是 |
 | `python run.py run --mode baseline` | 保持初始参数生成，不调用 Jev | 是 | 否 |
+| `python run.py run --mode stop_only` | 保持初始参数并启用评分提前停止；在思考中途停止时会先闭合思考块再生成最终答案 | 是 | 是 |
 | `python run.py compare` | 每题/种子先 fixed 再 adaptive | 是 | 是 |
 | `python run.py dashboard` | 打开实验结果的交互式可视化仪表盘 | 否 | 否 |
 | `python run.py summarize` | 列出保存的实验摘要 | 否 | 否 |

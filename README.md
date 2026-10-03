@@ -95,11 +95,11 @@ Jev-for-llm/
 | paths | Model, dataset, output directory |
 | engine | LLM constructor: dtype, context size, sequence capacity, GPU memory fraction, eager execution, tensor parallelism |
 | runtime | Optional FlashInfer sampler switch |
-| jev | HTTPS base URL, endpoint, model, direct API key, timeout, rubric file |
+| jev | HTTPS base URL, endpoint, model, direct API key, timeout, rubric file, request text view (how much generated text Choice requests carry) |
 | generation | Thinking template, segment/total token budgets, round cap |
 | parameters_file | Path to the selected parameter definitions |
-| experiment | fixed/adaptive mode, seeds, per-experiment Jev call cap |
-| policy | cooldown, stopping thresholds, rollback threshold, utility weights |
+| experiment | fixed/adaptive/stop_only/baseline mode, seeds, per-experiment Jev call cap |
+| policy | stopping thresholds, revert rule (consecutive utility declines), same-direction cap, dormancy of idle parameters, utility weights |
 
 The project always uses the active Python interpreter and native vLLM. `engine` settings apply when constructing the model; selected SamplingParams apply to the next generation call.
 
@@ -161,6 +161,7 @@ Run these commands yourself from the directory containing `run.py`:
 | `python run.py smoke` | Generate eight tokens for the first task | Yes | No |
 | `python run.py run` | Run the configured fixed/adaptive mode | Yes | Yes |
 | `python run.py run --mode baseline` | Generate with fixed parameters and no Jev requests | Yes | No |
+| `python run.py run --mode stop_only` | Fixed parameters plus score-based early stopping; an early stop inside the thinking block closes it and generates the final answer | Yes | Yes |
 | `python run.py compare` | Run fixed then adaptive for each task/seed | Yes | Yes |
 | `python run.py summarize` | List saved experiment summaries | No | No |
 | `python run.py dashboard` | Open an interactive visualization of experiment results | No | No |

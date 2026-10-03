@@ -1,6 +1,5 @@
 """Recursive JSON value constraints and typed parameter operations."""
 
-from copy import deepcopy
 import math
 
 
@@ -111,75 +110,3 @@ def validate_value(value, schema, path=None):
                     raise ValueError(f"{path}: unexpected key {key}")
                 child = extra if isinstance(extra, dict) else {"type": list(TYPES)}
             validate_value(item, child, f"{path}.{key}")
-
-
-def validate_action(rule, spec):
-    # Preserve existing numeric-delta files while preferring explicit operations.
-    if type(rule) in (int, float):
-        rule = {"op": "add", "value": rule}
-    if not isinstance(rule, dict) or set(rule) != {"op", "value"}:
-        raise ValueError("An action must contain exactly op and value")
-    op, value = rule["op"], rule["value"]
-    allowed = kinds(spec)
-    if op == "set":
-        validate_value(value, spec)
-    elif op == "add":
-        if not set(allowed) <= {"number", "integer"}:
-            raise ValueError("add requires a non-null numeric parameter")
-        if "minimum" not in spec or "maximum" not in spec:
-            raise ValueError("add requires minimum and maximum")
-        validate_value(value, {"type": "number" if "number" in allowed else "integer"})
-    elif op in ("append", "remove"):
-        if "array" not in allowed or not isinstance(value, list):
-            raise ValueError(f"{op} requires an array parameter and a list of elements")
-        validate_value(
-            value, {"type": "array", "items": spec.get("items", {"type": list(TYPES)})}
-        )
-    elif op == "update":
-        if "object" not in allowed or not isinstance(value, dict):
-            raise ValueError("update requires an object parameter and an object patch")
-        patch_schema = {
-            k: v for k, v in spec.items() if k not in ("required", "choices")
-        }
-        validate_value(value, {**patch_schema, "type": "object"})
-    else:
-        raise ValueError(f"Unknown parameter operation: {op}")
-    return rule
-
-
-def apply_action(current, rule, spec):
-    """Apply one operation on a copy and validate the entire resulting value."""
-    rule = validate_action(rule, spec)
-    op, value = rule["op"], deepcopy(rule["value"])
-    result = deepcopy(current)
-    if op == "set":
-        result = value
-    elif op == "add":
-        result = max(spec["minimum"], min(spec["maximum"], current + value))
-        if "number" not in kinds(spec):
-            result = int(result)
-        else:
-            result = round(result, 6)
-    elif op in ("append", "remove"):
-        if not isinstance(result, list):
-            raise ValueError(
-                f"{spec['name']}: {op} requires a current array; use set first"
-            )
-        if op == "append":
-            for item in value:
-                if not any(equal(item, existing) for existing in result):
-                    result.append(item)
-        else:
-            result = [
-                item
-                for item in result
-                if not any(equal(item, removed) for removed in value)
-            ]
-    elif op == "update":
-        if not isinstance(result, dict):
-            raise ValueError(
-                f"{spec['name']}: update requires a current object; use set first"
-            )
-        result.update(value)  # Shallow merge; use set to replace nested structures.
-    validate_value(result, spec)
-    return result
