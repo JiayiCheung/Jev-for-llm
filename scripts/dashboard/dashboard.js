@@ -3,7 +3,7 @@
 const tasks = window.JEV_OVERVIEW.tasks;
 const availableModes = window.JEV_OVERVIEW.modes || ["baseline", "fixed", "adaptive"];
 const $ = id => document.getElementById(id);
-const COLORS = {baseline: "#2878b8", fixed: "#2878b8", adaptive: "#c74646"};
+const COLORS = {baseline: "#8f8f8f", fixed: "#8f8f8f", adaptive: "#1f6fb5"};
 const COPY = {
   zh: {
     siteTitle: "绩效与推理成本",
@@ -12,8 +12,8 @@ const COPY = {
     batchLabel: "实验批次", controlLabel: "对照组", controlBaseline: "Baseline · 仅 Qwen", controlFixed: "Fixed · Jev 评分",
     filterLabel: "答案筛选", all: "全部", improved: "Adaptive 改进", regressed: "Adaptive 退步", ungraded: "未评分",
     searchLabel: "搜索任务", tokenTitle: "生成 token",
-    groupScalars: "01 · 标量曲线", groupPaired: "02 · 配对关系", groupDistributions: "03 · 双指标权衡", groupOutcomes: "04 · 答案与控制开销",
-    tokenDesc: "按任务顺序；超过 100 道时按连续任务分箱取均值。蓝色为对照组，红色为 Adaptive。",
+    groupFindings: "关键发现", groupScalars: "01 · 标量曲线", groupPaired: "02 · 配对关系", groupDistributions: "03 · 双指标权衡", groupOutcomes: "04 · 答案与控制开销",
+    tokenDesc: "按任务顺序；超过 100 道时按连续任务分箱取均值。灰色为对照组，蓝色为 Adaptive。",
     timeTitle: "请求耗时", timeDesc: "生成与 Jev 请求的计时之和；超过 100 道时分箱取均值。",
     tokenScatterTitle: "配对 token", timeScatterTitle: "配对请求耗时",
     scatterDesc: "横轴为对照组，纵轴为 Adaptive；点在对角线下方表示 Adaptive 更少。超过 1,000 道时抽样显示点位。",
@@ -32,7 +32,7 @@ const COPY = {
     scoreTitle: "Jev Score 与效用", scoreDesc: "选择一项 0–1 归一化 Score，与效用逐轮对比。", scoreMetric: "Score 指标",
     roundTimeTitle: "生成与 Jev 请求耗时", roundTimeDesc: "逐轮计时，单位秒。",
     paramTitle: "采样参数轨迹", paramLabel: "参数", paramDesc: "显示各模式实际用于每轮生成的值",
-    eventsTitle: "逐轮事件", thRound: "轮次", thTokenRange: "Token 区间", thScoreUtility: "Score / 效用",
+    eventsTitle: "逐轮事件", thRound: "轮次", thTokenRange: "Token 区间", thScoreUtility: "最严重症状 / 效用",
     thJevRequests: "Jev 请求", thJevTokens: "Jev token 输入 / 输出", thDecision: "决策", thAppliedNext: "下一轮生效",
     answerSummary: "查看三组最终答案末段与结果文件路径",
     footnote: "准确率仅统计可独立判分的配对任务。Jev Score 是过程反馈，不等同于答案正确率。计时受任务长度、设备状态和模型加载影响；小样本结果仅说明本批次。",
@@ -46,7 +46,7 @@ const COPY = {
     timeTip: "Adaptive（Qwen 生成 + Jev 请求）耗时减去当前对照组相同口径的耗时；负值表示更短。",
     grade: {correct: "正确", incorrect: "错误", ungraded: "未评分"},
     action: {adjust: "调整", keep: "保持", rollback: "回退", stop: "停止"},
-    score: {correctness: "正确性", relevance: "相关性", repetition: "重复性", completeness: "完整性", utility: "效用"},
+    score: {correctness: "正确性", relevance: "相关性", repetition: "重复性", completeness: "完整性", utility: "效用", scatter: "散乱", rigidity: "僵住", distortion: "扭曲", over_checking: "过度复核", under_checking: "复核不足", on_track: "在正轨", trouble: "症状总量"},
     answer: "答案", requestTime: "请求耗时", calls: "Jev 调用", changes: "实际变更",
     stopReason: "停止原因", loading: "正在读取逐轮记录…", loadError: "无法读取该任务的数据文件。",
     proposedOnly: "已提议；未在下一轮生效", generation: "Qwen 生成", requests: "Jev 请求",
@@ -59,8 +59,8 @@ const COPY = {
     batchLabel: "Experiment batch", controlLabel: "Control", controlBaseline: "Baseline · Qwen only", controlFixed: "Fixed · Jev scoring",
     filterLabel: "Answer filter", all: "All", improved: "Adaptive improved", regressed: "Adaptive regressed", ungraded: "Ungraded",
     searchLabel: "Search tasks", tokenTitle: "Generated tokens",
-    groupScalars: "01 · Scalar traces", groupPaired: "02 · Paired comparisons", groupDistributions: "03 · Joint cost changes", groupOutcomes: "04 · Outcomes & control cost",
-    tokenDesc: "Task order; above 100 tasks, consecutive tasks are binned and averaged. Blue is the control, red is adaptive.",
+    groupFindings: "Key findings", groupScalars: "01 · Scalar traces", groupPaired: "02 · Paired comparisons", groupDistributions: "03 · Joint cost changes", groupOutcomes: "04 · Outcomes & control cost",
+    tokenDesc: "Task order; above 100 tasks, consecutive tasks are binned and averaged. Gray is the control, blue is adaptive.",
     timeTitle: "Request time", timeDesc: "Generation plus Jev request time; above 100 tasks, consecutive tasks are binned and averaged.",
     tokenScatterTitle: "Paired tokens", timeScatterTitle: "Paired request time",
     scatterDesc: "Control on x, adaptive on y; below the diagonal means less for adaptive. Above 1,000 tasks, points are sampled.",
@@ -79,7 +79,7 @@ const COPY = {
     scoreTitle: "Jev Score & utility", scoreDesc: "Select one normalized 0–1 Score to compare with utility by round.", scoreMetric: "Score metric",
     roundTimeTitle: "Generation & Jev request time", roundTimeDesc: "Measured time per round, in seconds.",
     paramTitle: "Sampling parameter trajectories", paramLabel: "Parameter", paramDesc: "Values actually used to generate each round",
-    eventsTitle: "Round events", thRound: "Round", thTokenRange: "Token range", thScoreUtility: "Score / utility",
+    eventsTitle: "Round events", thRound: "Round", thTokenRange: "Token range", thScoreUtility: "Worst symptom / utility",
     thJevRequests: "Jev requests", thJevTokens: "Jev tokens in / out", thDecision: "Decision", thAppliedNext: "Applied next round",
     answerSummary: "View final-answer excerpts and result file paths for all three runs",
     footnote: "Accuracy includes only paired tasks with independently gradable answers. Jev Score is process feedback, not answer accuracy. Timing depends on task length, device state, and model loading; this small sample describes only this batch.",
@@ -93,7 +93,7 @@ const COPY = {
     timeTip: "Adaptive (Qwen generation + Jev requests) minus the same measured time for the selected control; negative means shorter.",
     grade: {correct: "Correct", incorrect: "Incorrect", ungraded: "Ungraded"},
     action: {adjust: "Adjust", keep: "Keep", rollback: "Rollback", stop: "Stop"},
-    score: {correctness: "Correctness", relevance: "Relevance", repetition: "Repetition", completeness: "Completeness", utility: "Utility"},
+    score: {correctness: "Correctness", relevance: "Relevance", repetition: "Repetition", completeness: "Completeness", utility: "Utility", scatter: "Scatter", rigidity: "Rigidity", distortion: "Distortion", over_checking: "Over-checking", under_checking: "Under-checking", on_track: "On track", trouble: "Trouble"},
     answer: "Answer", requestTime: "Request time", calls: "Jev calls", changes: "Applied changes",
     stopReason: "Stop reason", loading: "Loading round records…", loadError: "Could not load this task's data file.",
     proposedOnly: "Proposed; not applied next round", generation: "Qwen generation", requests: "Jev requests",
@@ -359,7 +359,7 @@ function drawOutcomes(rows) {
     label.textContent = t(key);
     root.append(label);
     const bar = svgElement("rect", {x: m.left, y: y + 5, width: count / max * (W - m.left - m.right), height: 23,
-      fill: key === "improvedOutcome" ? COLORS.adaptive : key === "regressedOutcome" ? "#a87676" : key === "bothCorrect" ? COLORS.baseline : "#abb1b1", opacity: .85});
+      fill: key === "improvedOutcome" ? "#1f6fb5" : key === "regressedOutcome" ? "#c0392b" : key === "bothCorrect" ? "#8f8f8f" : "#d4d4d4"});
     const title = svgElement("title"); title.textContent = `${t(key)}: ${count}`; bar.append(title);
     root.append(bar);
     const value = svgElement("text", {x: m.left + count / max * (W - m.left - m.right) + 6, y: y + 21, class: "label"});
@@ -395,6 +395,7 @@ function renderOverview() {
     row => row.modes.adaptive.jevCalls,
     row => row.modes.adaptive.generatedTokens - row.modes[state.control].generatedTokens,
     t("thCalls"), t("thDeltaToken"), {zeroY: true});
+  if (typeof window.renderFindings === "function") window.renderFindings(rows);
   const pages = Math.max(1, Math.ceil(rows.length / 50));
   state.page = Math.min(state.page, pages - 1);
   $("table-count").textContent = `${rows.length} ${t("tasks")}`;
@@ -455,7 +456,8 @@ function renderDetail(detail) {
   }
   const rounds = detail.modes.adaptive.rounds;
   const scoreSelect = $("score-metric"), priorScore = scoreSelect.value;
-  scoreSelect.replaceChildren(...["correctness", "relevance", "repetition", "completeness"].map(key => {
+  const present = Object.keys(rounds.find(round => Object.keys(round.scores || {}).length)?.scores || {});
+  scoreSelect.replaceChildren(...present.map(key => {
     const option = element("option", t("score")[key]); option.value = key; return option;
   }));
   scoreSelect.value = priorScore || "correctness";
@@ -476,7 +478,7 @@ function renderDetail(detail) {
   rounds.forEach((round, index) => {
     const tr = element("tr");
     const applied = round.executedNextRound ? round.changedNextRound.join(", ") : round.proposal ? t("proposedOnly") : "—";
-    [index + 1, `${round.tokenStart}–${round.tokenEnd}`, `${fmt(round.scores.correctness, 2)} / ${fmt(round.utility, 2)}`,
+    [index + 1, `${round.tokenStart}–${round.tokenEnd}`, roundSummary(round),
       round.jevCalls, `${round.jevInputTokens} / ${round.jevOutputTokens}`, t("action")[round.action] || round.action || "—", applied]
       .forEach(value => tr.append(element("td", value)));
     body.append(tr);
@@ -501,12 +503,19 @@ function renderParameter(detail) {
   })));
 }
 
+/* Runs made before the symptom scores have `utility`; later runs have `trouble` (higher is worse). */
+const roundLevel = round => round.trouble ?? round.utility;
+const levelName = rounds => t("score")[rounds.some(round => round.trouble != null) ? "trouble" : "utility"];
+const roundSummary = round => round.trouble != null
+  ? `${t("score")[round.worst] || round.worst} ${fmt(round.trouble, 2)}`
+  : `${fmt(round.scores.correctness, 2)} / ${fmt(round.utility, 2)}`;
+
 function renderScore(detail) {
   const key = $("score-metric").value;
   const rounds = detail.modes.adaptive.rounds;
   chart("score-chart", [
     {name: t("score")[key], color: COLORS.adaptive, values: rounds.map(round => round.scores[key])},
-    {name: t("score").utility, color: COLORS.baseline, values: rounds.map(round => round.utility)}
+    {name: levelName(rounds), color: COLORS.baseline, values: rounds.map(roundLevel)}
   ], {ymin: 0, ymax: 1, percent: true});
 }
 

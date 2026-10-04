@@ -1,16 +1,19 @@
 # Native vLLM SamplingParams that Jev may adjust between segments.
 # Numeric windows follow vLLM's own validity ranges, so Jev's effect can be read without
-# artificial limits; the one deliberate exception is the temperature floor (Qwen3 advises against greedy decoding).
+# artificial limits; the one deliberate exception is the temperature floor of 0.2.
 # Lists, maps and presets need reviewed candidates before Jev can edit them.
 # Token IDs were taken from the Qwen3 tokenizer (each word is a single token).
+# Each description states the mechanism, the range and the neutral value, nothing else.
+# To keep an entry out of the questions, set "adaptive": false in its control; it then keeps its
+# initial value, which is still what is sent to vLLM.
 [
-  {"name":"temperature","api_name":"temperature","stage":"completion","type":"number","initial":0.6,"minimum":0.2,"maximum":2,"description":"Sampling randomness. Qwen3 advises against greedy decoding in thinking mode, so the window stops at 0.2.","control":{"window":[0.2,2],"denominator":18}},
-  {"name":"top_p","api_name":"top_p","stage":"completion","type":"number","initial":0.95,"minimum":0.05,"maximum":1,"description":"Cumulative probability mass considered for sampling.","control":{"window":[0.05,1],"denominator":19}},
-  {"name":"top_k","api_name":"top_k","stage":"completion","type":"integer","initial":20,"minimum":-1,"maximum":1000000,"description":"Number of candidate tokens; zero or minus one disables filtering.","control":{"window":[1,201],"denominator":40,"disabled_value":0,"enable_value":20}},
-  {"name":"repetition_penalty","api_name":"repetition_penalty","stage":"completion","type":"number","initial":1.0,"minimum":0.5,"maximum":2,"description":"Penalty for tokens present in the prompt or generated text; below 1 favours repetition.","control":{"window":[0.5,2],"denominator":30}},
-  {"name":"frequency_penalty","api_name":"frequency_penalty","stage":"completion","type":"number","initial":0.0,"minimum":-2,"maximum":2,"description":"Penalty scaled by token frequency in generated text.","control":{"window":[-2,2],"denominator":40}},
-  {"name":"presence_penalty","api_name":"presence_penalty","stage":"completion","type":"number","initial":0.0,"minimum":-2,"maximum":2,"description":"Penalty for tokens already present in generated text.","control":{"window":[-2,2],"denominator":40}},
-  {"name":"min_p","api_name":"min_p","stage":"completion","type":"number","initial":0.0,"minimum":0,"maximum":1,"description":"Minimum token probability relative to the most likely token.","control":{"window":[0,1],"denominator":50}},
+  {"name":"temperature","api_name":"temperature","stage":"completion","type":"number","initial":0.6,"minimum":0.2,"maximum":2,"description":"Divides the model's logits before sampling. 1.0 leaves the distribution unchanged; lower values concentrate probability on likely tokens, higher values spread it to other tokens.","control":{"window":[0.2,2],"denominator":18}},
+  {"name":"top_p","api_name":"top_p","stage":"completion","type":"number","initial":0.95,"minimum":0.05,"maximum":1,"description":"Samples only from the smallest set of tokens whose probabilities add up to this value. 1.0 disables the cut.","control":{"window":[0.05,1],"denominator":19}},
+  {"name":"top_k","api_name":"top_k","stage":"completion","type":"integer","initial":20,"minimum":-1,"maximum":1000000,"description":"Samples only from this many most probable tokens. 0 disables the cut.","control":{"window":[1,201],"denominator":40,"disabled_value":0,"enable_value":20}},
+  {"name":"repetition_penalty","api_name":"repetition_penalty","stage":"completion","type":"number","initial":1.0,"minimum":0.5,"maximum":2,"description":"Divides the probability of every token that has already appeared in the prompt or the generated text, digits and symbols included. 1.0 applies no change.","control":{"window":[0.5,2],"denominator":30}},
+  {"name":"frequency_penalty","api_name":"frequency_penalty","stage":"completion","type":"number","initial":0.0,"minimum":-2,"maximum":2,"description":"Subtracts from a token's logit in proportion to how many times it has already appeared in the generated text. 0 applies no change.","control":{"window":[-2,2],"denominator":40}},
+  {"name":"presence_penalty","api_name":"presence_penalty","stage":"completion","type":"number","initial":0.0,"minimum":-2,"maximum":2,"description":"Subtracts a fixed amount from the logit of every token that has appeared at least once in the generated text. 0 applies no change.","control":{"window":[-2,2],"denominator":40}},
+  {"name":"min_p","api_name":"min_p","stage":"completion","type":"number","initial":0.0,"minimum":0,"maximum":1,"description":"Drops tokens whose probability is below this fraction of the most probable token's probability. 0 disables the cut.","control":{"window":[0,1],"denominator":50}},
   {"name":"ignore_eos","api_name":"ignore_eos","stage":"completion","type":"boolean","initial":false,"description":"Continue sampling after EOS; the experiment token cap still applies.","control":{}},
   {"name":"stop_token_ids","api_name":"stop_token_ids","stage":"completion","type":["array","null"],"initial":null,"items":{"type":"integer","minimum":0},"description":"Token IDs that stop generation. Add tokenizer-verified candidates before allowing changes.","control":{"candidates":[]}},
   {"name":"allowed_token_ids","api_name":"allowed_token_ids","stage":"completion","type":["array","null"],"initial":null,"items":{"type":"integer","minimum":0},"description":"Restrict sampling to verified token IDs; an empty allowlist is invalid.","control":{"candidates":[]}},
@@ -28,7 +31,7 @@
       "minimum": -100,
       "maximum": 100
     },
-    "description": "Token ID to logit offset. Reviewed groups: sentence-initial hesitation and switching words, which reasoning models use to double back, and the end of the thinking block.",
+    "description": "Adds a fixed amount to the logit of the listed tokens (the group name says which words). Negative amounts make them less likely, positive amounts more likely. The group named wrap_up acts on the token that closes the thinking block.",
     "control": {
       "entries": [
         {
@@ -179,7 +182,7 @@
   {"name":"spaces_between_special_tokens","api_name":"spaces_between_special_tokens","stage":"completion","type":"boolean","initial":true,"description":"Insert spaces between adjacent special tokens in decoded output; output representation only.","control":{}},
   {"name":"include_stop_str_in_output","api_name":"include_stop_str_in_output","stage":"completion","type":"boolean","initial":false,"description":"Whether decoded output includes the stop string; only relevant when a stop string is configured.","control":{}},
   {"name":"flat_logprobs","api_name":"flat_logprobs","stage":"completion","type":"boolean","initial":false,"description":"Return log probabilities in a flattened representation; observation only.","control":{}},
-  {"name":"bad_words","api_name":"bad_words","stage":"completion","type":["array","null"],"initial":null,"items":{"type":"string"},"description":"Words that must not be generated (a hard ban; each is blocked with and without a leading space).","control":{"candidates":["Wait","Hmm","Alternatively","Actually","Maybe"]}},
+  {"name":"bad_words","api_name":"bad_words","stage":"completion","type":["array","null"],"initial":null,"items":{"type":"string"},"description":"Prevents the listed words from being generated.","control":{"candidates":["Wait","Hmm","Alternatively","Actually","Maybe"]}},
   {
     "name": "repetition_detection",
     "api_name": "repetition_detection",
@@ -209,7 +212,7 @@
       "min_count"
     ],
     "additional_properties": false,
-    "description": "End the segment when a token pattern repeats (finish reason repetition); the run continues from there.",
+    "description": "Ends the current segment when a token pattern of the given length repeats the given number of times.",
     "control": {
       "presets": [
         {

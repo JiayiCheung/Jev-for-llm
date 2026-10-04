@@ -15,7 +15,7 @@
   "initial": 0.6,
   "minimum": 0.2,
   "maximum": 2,
-  "description": "Sampling randomness. Qwen3 advises against greedy decoding in thinking mode, so the window stops at 0.2.",
+  "description": "Divides the model's logits before sampling. 1.0 leaves the distribution unchanged; lower values concentrate probability on likely tokens, higher values spread it to other tokens.",
   "control": {
     "window": [0.2, 2],
     "denominator": 18
@@ -75,6 +75,6 @@
 - **其他可空整数：**`prompt_logprobs` 遵循与 `logprobs` 相同的启用和步长规则，属于观测设置。
 - **其他容易切换的字段：**`min_tokens` 只在 `0` 和 `1` 之间切换，确保只剩一个 token 生成空间时仍合法；`detokenize`、`skip_special_tokens`、`spaces_between_special_tokens`、`include_stop_str_in_output`、`flat_logprobs` 均为布尔开关。后几项改变观测或输出形式，依赖功能未启用时有的切换不会产生效果。
 
-每次方向请求的上下文都包含当前 22 个值。目前 20 项有可执行方向；只有 `stop_token_ids` 和 `allowed_token_ids` 要先补经核实的 token 候选，暂时只能保持。技术上能修改，不等于适合用来纠正错误答案。
+每次方向请求的上下文都包含当前 22 个值。目前 20 项有可执行方向；只有 `stop_token_ids` 和 `allowed_token_ids` 要先补经核实的 token 候选，暂时只能保持。技术上能修改，不等于适合用来纠正错误答案。`control` 里写了 `"adaptive": false` 的条目保持初始值、不被提问，默认文件没有使用这个开关。每个说明只写机制、范围和中性值。
 
 新增参数还须是已安装 `SamplingParams` 真正接受的字段；`python run.py doctor` 只构造参数，不加载模型、不调用 Jev。[完整清单](vllm_catalog_taxonomy.zh-CN.md)中的条件性功能或启动字段，要另外实现相应接口后才能进入这里。

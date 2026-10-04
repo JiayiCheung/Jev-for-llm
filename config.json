@@ -64,15 +64,13 @@
     # Rubric file path, resolved relative to this configuration file.
     "questions_file": "jev_questions.json",
 
-    # How much generated text the Choice requests (direction/value) carry. The newest
-    # keep_full segments are sent whole; older segments keep head+tail characters.
+    # How much generated text the Choice requests (direction/value/restart) carry. The newest
+    # keep_full segments (at least 1) are sent whole, so the newest segment is always complete
+    # and needs no separate copy; older segments keep head+tail characters.
     "view": {
       "keep_full": 3,
       "head": 120,
-      "tail": 200,
-
-      # Apply the same shortening to Score requests. Off: Score input is unchanged.
-      "score": false
+      "tail": 200
     }
 
   },
@@ -103,29 +101,16 @@
 
   },
 
-  # Controller settings. Stopping and rollback use normalized Score values.
+  # Controller settings.
   "policy": {
-
-    # Restore the best-so-far parameters after consecutive utility declines.
-    # No magnitude threshold: only the direction of change between rounds counts.
-    "revert": {
-      "enabled": true,
-
-      # consecutive_decrease: k rounds in a row each lower than the previous one.
-      # below_best: k rounds in a row lower than the best utility so far (more sensitive).
-      "rule": "consecutive_decrease",
-
-      # k.
-      "consecutive_declines": 3
-    },
 
     # Let Jev send a long reasoning back to an earlier checkpoint. From round first_check_round
     # (and then every recheck_every rounds after a continue) Jev chooses between continue and
     # going back to the start or to any earlier checkpoint (= a point where it was asked and said
     # continue). After going back, a fresh attempt of probe_rounds rounds is generated with a new
     # seed and Jev judges whether it follows a different approach from the abandoned one; if not,
-    # it is discarded and retried, at most max_tries times. Applies whenever Jev is called
-    # (fixed and adaptive); a run stops asking after max_restarts restarts.
+    # it is discarded and retried, at most max_tries times. Adaptive mode only: fixed is the
+    # control, Jev only scores there and never intervenes. A run stops asking after max_restarts.
     "restart": {
       "enabled": true,
       "first_check_round": 20,
@@ -150,21 +135,21 @@
       "skip_rounds": 5
     },
 
-    # Nonnegative importance weights (0-1); at least one must be positive.
-    # Code normalizes the weights and reverses repetition to produce a 0-1 quality score.
-    "utility_weights": {
-      # Utility weight for correctness. Positive to reward this dimension.
-      "correctness": 0.45,
+    # How worrying each symptom is relative to the others (0-1, at least one positive). The
+    # weights are divided by the largest one, and `trouble` is the largest weighted severity.
+    # Equal weights are the starting point; a lower weight makes a symptom count for less.
+    "symptom_weights": {
+      "scatter": 1.0,
+      "rigidity": 1.0,
+      "distortion": 1.0,
+      "over_checking": 1.0,
+      "under_checking": 1.0
+    },
 
-      # Utility weight for relevance. Positive to reward this dimension.
-      "relevance": 0.3,
-
-      # Utility weight for completeness. Positive to reward this dimension.
-      "completeness": 0.15,
-
-      # Positive importance of avoiding repetition; code handles the penalty.
-      "repetition": 0.1
-
+    # What Jev is shown about the scores. A symptom counts as present in a segment when its
+    # probability of being severe (level 3 or 4) is at least persistence_threshold.
+    "signals": {
+      "persistence_threshold": 0.5
     }
 
   }

@@ -2,7 +2,7 @@
 
 **English** | [简体中文](docs/README.zh-CN.md) | [Website](https://jiayicheung.github.io/Jev-for-llm/)
 
-Qwen generates text locally through the Python vLLM API. Jev evaluates each segment using four Score rubrics. A configurable controller chooses the next segment's parameters. The model stays loaded throughout one process. Only Jev uses HTTPS; no local API server is required.
+Qwen generates text locally through the Python vLLM API. Jev rates each segment with Score rubrics that describe symptoms in the text. A configurable controller chooses the next segment's parameters. The model stays loaded throughout one process. Only Jev uses HTTPS; no local API server is required.
 
 ![Jev-guided segmented inference: generation, scoring, fixed and adaptive decisions, and the next-segment feedback loop](docs/figures/workflow_en.svg)
 
@@ -80,7 +80,7 @@ Jev-for-llm/
   run.py                 Command-line entry point
   config.json            Paths, engine, API key and policy settings
   parameters.json        Selected native fields, types, defaults and actions
-  jev_questions.json     Four evaluator rubrics
+  jev_questions.json     Evaluator rubrics: symptom scores and an on_track forecast
   pyproject.toml         Package metadata and black / isort settings
   data/                  Active tasks and sampling provenance
   src/jev_vllm/          Implementation
@@ -103,7 +103,7 @@ Code style: [black](https://black.readthedocs.io/) and [isort](https://pycqa.git
 | generation | Thinking template, segment/total token budgets, round cap |
 | parameters_file | Path to the selected parameter definitions |
 | experiment | fixed/adaptive/baseline mode, seeds |
-| policy | restart from a checkpoint (Jev sends a long reasoning back), revert rule (consecutive utility declines), same-direction cap, dormancy of idle parameters, utility weights |
+| policy | restart from a checkpoint (Jev sends a long reasoning back), same-direction cap, dormancy of idle parameters, symptom weights, signal settings |
 
 The project always uses the active Python interpreter and native vLLM. `engine` settings apply when constructing the model; selected SamplingParams apply to the next generation call.
 
@@ -143,7 +143,20 @@ For the broader vLLM design space, see the [1,181-entry checklist taxonomy](docs
 
 ### Evaluation rubrics and task data
 
-`jev_questions.json` defines correctness, relevance, repetition and completeness. Each uses `type: score`, English `instructions`, and an ordered `criteria` list. The current five levels correspond to 0–4. Parsing validates score and probability distribution; normalization divides score by 4. High repetition is undesirable; the other dimensions reward higher scores.
+`jev_questions.json` defines the Score rubrics. Each uses `type: score`, a `kind`, English `instructions`, and an ordered `criteria` list; the five levels correspond to 0–4. The `kind` is read by the program and is never sent to Jev.
+
+| Rubric | Kind | Scored on | Looks for |
+|---|---|---|---|
+| `scatter` | symptom | last segment | careless slips that look like sampling noise |
+| `rigidity` | symptom | last segment | repeating itself, looping |
+| `distortion` | symptom | last segment | garbled text, language switches, odd formats |
+| `over_checking` | symptom | last three segments | re-checking or re-stating results that no longer change |
+| `under_checking` | symptom | last three segments | concluding or switching approach without checking |
+| `on_track` | forecast | whole reasoning | likelihood of a correct final answer (used only by the restart check) |
+
+For a symptom, 0 means not present and 4 means severe, so a higher score is worse; for the forecast a higher score is better. The score request sends `task`, `segments` (the kept segments as one list, the newest last, so that no text appears twice) and a short `about` note; each rubric says which items of `segments` it judges.
+
+The program computes, for every symptom, `severity` (expected level divided by the highest level) and `p_severe` (probability of the two highest levels). `trouble` is the largest weighted severity (`policy.symptom_weights`, scaled so the largest weight is 1) and `worst` names the symptom behind it. When Jev chooses parameters it sees these values together with the first segment's values (`at_start`), the last three segments, how many consecutive segments each symptom persisted (`policy.signals.persistence_threshold`), its own recent parameter changes and how long each change has been in effect, and a `reading_guide` that only explains the fields. Nothing in the request tells Jev what to do about a symptom, and each parameter description states mechanism, range and neutral value only. `trouble` is shown and recorded; no program rule acts on it.
 
 Tasks belong in `data/tasks.jsonl`, not in the rubric file. JSONL is strict JSON: one complete object per line, no comments or outer array:
 

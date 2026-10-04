@@ -2,7 +2,7 @@
 
 [English](../README.md) | **简体中文** | [项目主页](https://jiayicheung.github.io/Jev-for-llm/)
 
-Qwen 通过 **Python vLLM 接口在本地生成**；Jev 对每段输出做四个维度的 Score 评价；参数决策模块据此决定下一段使用的参数。一个进程内保持模型加载，只有 Jev 调用使用 HTTPS，**不需要启动本地 HTTP 服务**。
+Qwen 通过 **Python vLLM 接口在本地生成**；Jev 用 Score 评价每段输出里的症状；参数决策模块据此决定下一段使用的参数。一个进程内保持模型加载，只有 Jev 调用使用 HTTPS，**不需要启动本地 HTTP 服务**。
 
 ![Jev 分段推理流程：生成、评分、固定与自适应决策及下一段反馈回路](figures/workflow_zh.svg)
 
@@ -80,7 +80,7 @@ Jev-for-llm/
   run.py                 命令行入口
   config.json            路径、引擎、API 密钥和决策设置
   parameters.json        选中的原生参数、类型、初值和调整规则
-  jev_questions.json     四个评分维度的英文指令与等级标准
+  jev_questions.json     评分维度（症状评分与 on_track 预测）的英文指令与等级标准
   pyproject.toml         Python 包元数据与 black / isort 设置
   data/                  当前运行题目与抽样来源记录
   src/jev_vllm/          核心实现
@@ -103,7 +103,7 @@ Jev-for-llm/
 | generation | 思考开关、分段与总 token 预算、轮数上限 |
 | parameters_file | 参数定义文件路径 |
 | experiment | fixed/adaptive/baseline 模式、随机种子 |
-| policy | 从检查点重来（由 Jev 决定是否让一段很长的推理回退重做）、回退规则（连续效用下降）、同方向连续上限、空转参数休眠、效用权重 |
+| policy | 从检查点重来（由 Jev 决定是否让一段很长的推理回退重做）、同方向连续上限、空转参数休眠、症状权重、信号设置 |
 
 项目固定使用当前 Python 解释器直接调用 vLLM。`engine` 在创建模型时生效；`parameters.json` 中的 SamplingParams 在下一次生成调用时生效。
 
@@ -143,16 +143,20 @@ Jev-for-llm/
 
 ### Jev 评分标准与输入题目
 
-`jev_questions.json` 定义四个固定名称的 Score 维度：
+`jev_questions.json` 定义 Score 维度。每个维度有 `type: score`、`kind`、英文 `instructions` 和有序 `criteria` 列表，五档对应 0–4。`kind` 只由程序读取，**不会发给 Jev**。
 
-| 维度 | 评价对象 | 高分含义 |
-|---|---|---|
-| correctness | 已生成内容的正确性；未完成本身不算错误 | 更正确 |
-| relevance | 是否围绕题目展开 | 更相关 |
-| repetition | 最近片段结合历史是否无效重复 | 重复更严重，越低越好 |
-| completeness | 是否给出覆盖题目的完整最终答案 | 更完整 |
+| 维度 | 类别 | 评价范围 | 看什么 |
+|---|---|---|---|
+| `scatter`（散乱） | 症状 | 最新一段 | 像采样噪声造成的失误 |
+| `rigidity`（僵住） | 症状 | 最新一段 | 重复自己、原地打转 |
+| `distortion`（扭曲） | 症状 | 最新一段 | 乱码、语言切换、怪异格式 |
+| `over_checking`（过度复核） | 症状 | 最近 3 段 | 反复核对或重述已不再变化的结果 |
+| `under_checking`（复核不足） | 症状 | 最近 3 段 | 没有核对就下结论或换思路 |
+| `on_track`（在正轨） | 预测 | 整条推理 | 最终答对的可能性（只给重来检查用） |
 
-每个维度有 `type: score`、英文 `instructions`、有序 `criteria` 列表。当前五档索引为 0–4；归一化分数为原始分数除以 4。修改等级数量后，适配器使用新的最大索引归一化。
+症状类 0 表示没有、4 表示严重，所以**越高越糟**；预测类越高越好。评分请求发送 `task`、`segments`（保留下来的各段，组成一个列表，最新的在最后，**任何文字都不会出现两遍**）和一句 `about` 说明；每个维度的指令说明它评价 `segments` 里的哪几项。
+
+程序对每个症状计算 `severity`（期望等级 ÷ 最高等级）和 `p_severe`（最高两档的概率之和）。`trouble` 是各症状加权后的**最大严重度**（`policy.symptom_weights`，按最大权重归一化为 1），`worst` 指出是哪一项。Jev 选参数时看到这些值，加上第 1 段的值（`at_start`）、最近 3 段、每个症状连续出现的段数（`policy.signals.persistence_threshold`）、自己最近改了哪些参数以及每个改动已生效几段，还有一段只解释字段含义的 `reading_guide`。请求里**没有任何一句告诉 Jev 遇到某个症状该怎么办**，每个参数的说明只写机制、范围和中性值。`trouble` 只用于展示和记录，没有任何程序规则依据它行动。
 
 模型要解答的题目在 `data/tasks.jsonl`，**不在评分标准文件里**。JSONL 每行是一个完整的严格 JSON 对象，不支持注释，也没有外围数组：
 

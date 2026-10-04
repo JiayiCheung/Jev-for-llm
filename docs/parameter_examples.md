@@ -15,7 +15,7 @@ The top level of `parameters.json` is an array. The three code blocks below are 
   "initial": 0.6,
   "minimum": 0.2,
   "maximum": 2,
-  "description": "Sampling randomness. Qwen3 advises against greedy decoding in thinking mode, so the window stops at 0.2.",
+  "description": "Divides the model's logits before sampling. 1.0 leaves the distribution unchanged; lower values concentrate probability on likely tokens, higher values spread it to other tokens.",
   "control": {
     "window": [0.2, 2],
     "denominator": 18
@@ -75,6 +75,6 @@ At `false`, Jev chooses keep or turn on. Turning it on directly sets `true`; no 
 - **Other nullable integer:** `prompt_logprobs` follows the same enable and step rules as `logprobs`; it is an observation setting.
 - **Other easily changed fields:** `min_tokens` can switch only between `0` and `1`, preserving validity even for a one-token segment. `detokenize`, `skip_special_tokens`, `spaces_between_special_tokens`, `include_stop_str_in_output`, and `flat_logprobs` are boolean switches. The latter flags change observation or output representation; some have no effect unless related features are active.
 
-All 22 current values are included as context for each direction request. Twenty currently have actionable direction options. Only `stop_token_ids` and `allowed_token_ids` require reviewed token candidates and remain hold-only. Technical adjustability does not mean every field is a plausible remedy for an incorrect answer.
+All 22 current values are included as context for each direction request. Twenty currently have actionable direction options. Only `stop_token_ids` and `allowed_token_ids` require reviewed token candidates and remain hold-only. Technical adjustability does not mean every field is a plausible remedy for an incorrect answer. An entry whose `control` sets `"adaptive": false` keeps its initial value and is not asked about; the shipped file does not use this. Each description states the mechanism, the range and the neutral value, and nothing else.
 
 The selected field must exist in the installed `SamplingParams`; `python run.py doctor` checks construction without loading a model or contacting Jev. Additional conditional or startup fields in the [full catalog](vllm_catalog_taxonomy.md) need route-specific handling before they can be added here.

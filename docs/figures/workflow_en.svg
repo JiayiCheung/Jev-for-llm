@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2520 3130" role="img" aria-labelledby="title desc">
   <title id="title">One run: Jev-guided segmented inference</title>
-  <desc id="desc">From initial parameters to the next segment · one task and seed</desc>
+  <desc id="desc">One task and seed · fixed only scores (the control); adaptive also intervenes (parameters, restart)</desc>
   <defs><marker id="arrowhead" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto"><path d="M1 1 L10 6 L1 11" fill="none" stroke="#626262" stroke-width="1.6"/></marker></defs>
   <style>
     .node{fill:#f0f0ec;stroke:#737373;stroke-width:1.8}
@@ -13,15 +13,16 @@
     .node-detail{fill:#4b4b4b;font:20px Arial,'Microsoft YaHei',sans-serif}
     .edge{fill:none;stroke:#626262;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}
     .edge.record,.edge.branch,.edge.bypass,.edge.loop{stroke:#626262}
+    .zone{fill:#7a7a7a;font:700 22px Arial,'Microsoft YaHei',sans-serif}
     .edge-label{fill:#454545;font:700 19px Arial,'Microsoft YaHei',sans-serif}
   </style>
   <rect width="2520" height="3130" fill="#fff"/>
   <rect x="12" y="12" width="2496" height="3106" fill="none" stroke="#8a8a8a" stroke-width="1.8" stroke-dasharray="4 6"/>
   <rect x="44" y="160" width="2432" height="582" fill="#f5f5f5"/>
-  <rect x="44" y="757" width="2432" height="835" fill="#f7f7f7"/>
-  <rect x="44" y="1607" width="2432" height="1352" fill="#f5f5f5"/>
+  <rect x="44" y="757" width="2432" height="955" fill="#f7f7f7"/>
+  <rect x="44" y="1727" width="2432" height="1388" fill="#f5f5f5"/>
   <text x="65" y="75" fill="#292929" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="47" font-weight="700">One run: Jev-guided segmented inference</text>
-  <text x="67" y="120" fill="#555" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="23">From initial parameters to the next segment · one task and seed</text>
+  <text x="67" y="120" fill="#555" font-family="Arial,'Microsoft YaHei',sans-serif" font-size="23">One task and seed · fixed only scores (the control); adaptive also intervenes (parameters, restart)</text>
   <path d="M65 138 H2455" stroke="#a0a0a0" stroke-width="1.5"/>
   <g transform="translate(0,-120)">
     <path d="M1140 412 V447" class="edge " marker-end="url(#arrowhead)"/>
@@ -41,23 +42,24 @@
     <path d="M1140 1816 V1851" class="edge " marker-end="url(#arrowhead)"/>
     <path d="M800 1908 H500" class="edge branch" marker-end="url(#arrowhead)"/>
     <path d="M1140 1965 V2000" class="edge " marker-end="url(#arrowhead)"/>
-    <path d="M800 2057 H500" class="edge branch" marker-end="url(#arrowhead)"/>
     <path d="M1480 2057 H1830" class="edge branch" marker-end="url(#arrowhead)"/>
-    <path d="M2100 2135 V2170" class="edge " marker-end="url(#arrowhead)"/>
-    <path d="M2100 2284 V2319" class="edge " marker-end="url(#arrowhead)"/>
-    <path d="M2100 2433 V2468" class="edge " marker-end="url(#arrowhead)"/>
-    <path d="M2100 2603 V2638" class="edge " marker-end="url(#arrowhead)"/>
-    <path d="M2100 2752 V2787" class="edge " marker-end="url(#arrowhead)"/>
-    <path d="M2100 2901 V2936" class="edge " marker-end="url(#arrowhead)"/>
-    <path d="M1830 2695 H1760 V2993 H1830" class="edge bypass" marker-end="url(#arrowhead)"/>
-    <path d="M1830 2068 H1780 V3138 H1480" class="edge bypass" marker-end="url(#arrowhead)"/>
-    <path d="M2370 2993 H2460 V3142 H1480" class="edge branch" marker-end="url(#arrowhead)"/>
-    <path d="M290 1965 V3060 H740 V3142 H800" class="edge branch" marker-end="url(#arrowhead)"/>
-    <path d="M365 2114 V3030 H720 V3110 H800" class="edge branch" marker-end="url(#arrowhead)"/>
+    <path d="M1140 2114 V2149" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M2100 2114 V2149" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M1830 2216 H1480" class="edge branch" marker-end="url(#arrowhead)"/>
+    <path d="M2100 2284 V2319" class="edge branch" marker-end="url(#arrowhead)"/>
+    <path d="M1140 2284 V2319" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M1140 2454 V2489" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M1140 2603 V2638" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M1140 2752 V2787" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M1140 2901 V2936" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M1140 3050 V3085" class="edge " marker-end="url(#arrowhead)"/>
+    <path d="M1480 2695 H1600 V2993 H1480" class="edge bypass" marker-end="url(#arrowhead)"/>
+    <path d="M290 1986 V3142 H800" class="edge branch" marker-end="url(#arrowhead)"/>
+    <path d="M2370 2386 H2470" class="edge loop" marker-end="url(#arrowhead)"/>
     <path d="M1140 3199 V3223 H2470 V802 H1480" class="edge loop" marker-end="url(#arrowhead)"/>
     <g><rect x="800" y="298" width="680" height="114" rx="2" class="node normal"/>
     <text x="1140" y="333" text-anchor="middle" class="node-title">Load and validate three inputs</text>
-    <text x="1140" y="368" text-anchor="middle" class="node-detail">config.json · parameters.json</text><text x="1140" y="396" text-anchor="middle" class="node-detail">jev_questions.json → controls and Score rubrics</text>
+    <text x="1140" y="368" text-anchor="middle" class="node-detail">config.json · parameters.json</text><text x="1140" y="396" text-anchor="middle" class="node-detail">jev_questions.json → six rubrics with kind</text>
   </g>
     <g><rect x="800" y="447" width="680" height="114" rx="2" class="node normal"/>
     <text x="1140" y="482" text-anchor="middle" class="node-title">Build initial sampling map</text>
@@ -69,11 +71,11 @@
   </g>
     <g><rect x="800" y="745" width="680" height="114" rx="2" class="node decision"/>
     <text x="1140" y="780" text-anchor="middle" class="node-title">May this round generate?</text>
-    <text x="1140" y="815" text-anchor="middle" class="node-detail">Check rounds, remaining tokens, context</text><text x="1140" y="843" text-anchor="middle" class="node-detail">and Jev request budget</text>
+    <text x="1140" y="815" text-anchor="middle" class="node-detail">Room left in the context window</text><text x="1140" y="843" text-anchor="middle" class="node-detail">Request passes vLLM parameter validation</text>
   </g>
     <g><rect x="800" y="894" width="680" height="135" rx="2" class="node emphasis"/>
     <text x="1140" y="929" text-anchor="middle" class="node-title">Build generation_request</text>
-    <text x="1140" y="964" text-anchor="middle" class="node-detail">prompt = prompt tokens + prior output token IDs</text><text x="1140" y="992" text-anchor="middle" class="node-detail">max_tokens = smallest remaining limit; seed + step</text>
+    <text x="1140" y="964" text-anchor="middle" class="node-detail">prompt = prompt tokens + prior output token IDs</text><text x="1140" y="992" text-anchor="middle" class="node-detail">max_tokens = chunk or remaining room; seed + step</text>
   </g>
     <g><rect x="80" y="894" width="420" height="135" rx="2" class="node record"/>
     <text x="290" y="929" text-anchor="middle" class="node-title">Save before generation</text>
@@ -85,75 +87,79 @@
   </g>
     <g><rect x="800" y="1213" width="680" height="114" rx="2" class="node normal"/>
     <text x="1140" y="1248" text-anchor="middle" class="node-title">Validate, append, decode</text>
-    <text x="1140" y="1283" text-anchor="middle" class="node-detail">Append new IDs to accumulated token sequence</text><text x="1140" y="1311" text-anchor="middle" class="node-detail">Produce full generated text and recent segment</text>
+    <text x="1140" y="1283" text-anchor="middle" class="node-detail">Append new IDs to the accumulated sequence</text><text x="1140" y="1311" text-anchor="middle" class="node-detail">Add the new text to the segments list (each once)</text>
   </g>
     <g><rect x="80" y="1213" width="420" height="114" rx="2" class="node record"/>
     <text x="290" y="1248" text-anchor="middle" class="node-title">Save answer snapshot</text>
     <text x="290" y="1283" text-anchor="middle" class="node-detail">rounds[].answer_snapshot</text><text x="290" y="1311" text-anchor="middle" class="node-detail">answer.txt: cumulative answer by round</text>
   </g>
     <g><rect x="800" y="1362" width="680" height="135" rx="2" class="node jev"/>
-    <text x="1140" y="1397" text-anchor="middle" class="node-title">Jev call ①: four Scores</text>
-    <text x="1140" y="1432" text-anchor="middle" class="node-detail">score_request: task / generated / recent / step</text><text x="1140" y="1460" text-anchor="middle" class="node-detail">Correctness · relevance · repetition · completeness</text>
+    <text x="1140" y="1397" text-anchor="middle" class="node-title">Jev call ①: six Scores</text>
+    <text x="1140" y="1432" text-anchor="middle" class="node-detail">score_request: task / segments / about</text><text x="1140" y="1460" text-anchor="middle" class="node-detail">Five symptoms and the on_track forecast</text>
   </g>
     <g><rect x="80" y="1362" width="420" height="135" rx="2" class="node record"/>
     <text x="290" y="1397" text-anchor="middle" class="node-title">Save Score request and result</text>
     <text x="290" y="1432" text-anchor="middle" class="node-detail">evaluation_request / response</text><text x="290" y="1460" text-anchor="middle" class="node-detail">Elapsed time and Jev call count</text>
   </g>
     <g><rect x="800" y="1532" width="680" height="135" rx="2" class="node normal"/>
-    <text x="1140" y="1567" text-anchor="middle" class="node-title">Parse Scores and compute utility</text>
-    <text x="1140" y="1602" text-anchor="middle" class="node-detail">Validate answers/probabilities; map 0–4 to 0–1</text><text x="1140" y="1630" text-anchor="middle" class="node-detail">Invert repetition; calculate weighted utility</text>
+    <text x="1140" y="1567" text-anchor="middle" class="node-title">Compute severity, p_severe, trouble</text>
+    <text x="1140" y="1602" text-anchor="middle" class="node-detail">severity = expected level ÷ 4; p_severe = top two levels</text><text x="1140" y="1630" text-anchor="middle" class="node-detail">trouble = largest weighted severity; worst names it</text>
   </g>
     <g><rect x="800" y="1702" width="680" height="114" rx="2" class="node decision"/>
     <text x="1140" y="1737" text-anchor="middle" class="node-title">Should this run stop now?</text>
-    <text x="1140" y="1772" text-anchor="middle" class="node-detail">Model stop / optional Score stop</text><text x="1140" y="1800" text-anchor="middle" class="node-detail">Token, context, round, or Jev budget reached</text>
+    <text x="1140" y="1772" text-anchor="middle" class="node-detail">The model stopped, or the context is full</text><text x="1140" y="1800" text-anchor="middle" class="node-detail">Nothing else ends a run</text>
   </g>
     <g><rect x="80" y="1702" width="420" height="114" rx="2" class="node finish"/>
     <text x="290" y="1737" text-anchor="middle" class="node-title">Finish and save final status</text>
     <text x="290" y="1772" text-anchor="middle" class="node-detail">stop_reason and rounds remain in result.json</text><text x="290" y="1800" text-anchor="middle" class="node-detail">Generated text remains in answer.txt</text>
   </g>
     <g><rect x="800" y="1851" width="680" height="114" rx="2" class="node decision"/>
-    <text x="1140" y="1886" text-anchor="middle" class="node-title">Did the last change lower utility?</text>
-    <text x="1140" y="1921" text-anchor="middle" class="node-detail">Compare current utility with pre-change utility</text><text x="1140" y="1949" text-anchor="middle" class="node-detail">Revert only beyond rollback.score_drop</text>
+    <text x="1140" y="1886" text-anchor="middle" class="node-title">Is this adaptive mode?</text>
+    <text x="1140" y="1921" text-anchor="middle" class="node-detail">fixed is the control: Jev only scores</text><text x="1140" y="1949" text-anchor="middle" class="node-detail">baseline never calls Jev</text>
   </g>
-    <g><rect x="80" y="1851" width="420" height="114" rx="2" class="node normal"/>
-    <text x="290" y="1886" text-anchor="middle" class="node-title">Restore prior parameters</text>
-    <text x="290" y="1921" text-anchor="middle" class="node-detail">Generated text remains unchanged</text><text x="290" y="1949" text-anchor="middle" class="node-detail">Restored values apply next segment</text>
+    <g><rect x="80" y="1851" width="420" height="135" rx="2" class="node normal"/>
+    <text x="290" y="1886" text-anchor="middle" class="node-title">Fixed control: keep everything</text>
+    <text x="290" y="1921" text-anchor="middle" class="node-detail">No parameter change, no restart</text><text x="290" y="1949" text-anchor="middle" class="node-detail">Same parameters in the next segment</text>
   </g>
     <g><rect x="800" y="2000" width="680" height="114" rx="2" class="node decision"/>
-    <text x="1140" y="2035" text-anchor="middle" class="node-title">Still in the cooldown period?</text>
-    <text x="1140" y="2070" text-anchor="middle" class="node-detail">Check last_change and cooldown_rounds</text><text x="1140" y="2098" text-anchor="middle" class="node-detail">Skip new Jev Choices while cooling down</text>
+    <text x="1140" y="2035" text-anchor="middle" class="node-title">Is a restart check due?</text>
+    <text x="1140" y="2070" text-anchor="middle" class="node-detail">From first_check_round, then every 20 rounds</text><text x="1140" y="2098" text-anchor="middle" class="node-detail">Fewer than max_restarts used so far</text>
   </g>
-    <g><rect x="80" y="2000" width="420" height="114" rx="2" class="node normal"/>
-    <text x="290" y="2035" text-anchor="middle" class="node-title">Keep current parameters</text>
-    <text x="290" y="2070" text-anchor="middle" class="node-detail">No new change this round</text><text x="290" y="2098" text-anchor="middle" class="node-detail">Reuse current values next segment</text>
+    <g><rect x="1830" y="2000" width="540" height="114" rx="2" class="node jev"/>
+    <text x="2100" y="2035" text-anchor="middle" class="node-title">Jev call ④: pick a restart point</text>
+    <text x="2100" y="2070" text-anchor="middle" class="node-detail">continue, or back_k to an earlier mark</text><text x="2100" y="2098" text-anchor="middle" class="node-detail">Sees the on_track trace of every mark</text>
   </g>
-    <g><rect x="1830" y="2000" width="540" height="135" rx="2" class="node emphasis"/>
-    <text x="2100" y="2035" text-anchor="middle" class="node-title">Build type-specific actions</text>
-    <text x="2100" y="2070" text-anchor="middle" class="node-detail">Numeric / nullable numeric / boolean / enum</text><text x="2100" y="2098" text-anchor="middle" class="node-detail">Other types; no options means keep</text>
+    <g><rect x="800" y="2149" width="680" height="135" rx="2" class="node normal"/>
+    <text x="1140" y="2184" text-anchor="middle" class="node-title">Build the signals for Jev</text>
+    <text x="1140" y="2219" text-anchor="middle" class="node-detail">gauges_now · at_start · recent_3 · persistence</text><text x="1140" y="2247" text-anchor="middle" class="node-detail">my_recent_changes · parameter_ages · reading_guide</text>
   </g>
-    <g><rect x="1830" y="2170" width="540" height="114" rx="2" class="node jev"/>
-    <text x="2100" y="2205" text-anchor="middle" class="node-title">Jev call ②: choose actions</text>
-    <text x="2100" y="2240" text-anchor="middle" class="node-detail">direction_request groups parameter Choices</text><text x="2100" y="2268" text-anchor="middle" class="node-detail">Each includes current value, meaning, and Scores</text>
+    <g><rect x="1830" y="2149" width="540" height="135" rx="2" class="node decision"/>
+    <text x="2100" y="2184" text-anchor="middle" class="node-title">Did Jev choose a mark?</text>
+    <text x="2100" y="2219" text-anchor="middle" class="node-detail">continue: this round becomes a new mark</text><text x="2100" y="2247" text-anchor="middle" class="node-detail">back_k: take the restart branch</text>
   </g>
-    <g><rect x="1830" y="2319" width="540" height="114" rx="2" class="node normal"/>
-    <text x="2100" y="2354" text-anchor="middle" class="node-title">Validate direction Choices</text>
-    <text x="2100" y="2389" text-anchor="middle" class="node-detail">parse_choices checks options and probabilities</text><text x="2100" y="2417" text-anchor="middle" class="node-detail">keep needs no exact-value question</text>
+    <g><rect x="800" y="2319" width="680" height="135" rx="2" class="node jev"/>
+    <text x="1140" y="2354" text-anchor="middle" class="node-title">Jev call ②: one Choice per parameter</text>
+    <text x="1140" y="2389" text-anchor="middle" class="node-detail">Options by type; dormant or capped ones are left out</text><text x="1140" y="2417" text-anchor="middle" class="node-detail">Sees task, segments, signals and all current values</text>
   </g>
-    <g><rect x="1830" y="2468" width="540" height="135" rx="2" class="node normal"/>
-    <text x="2100" y="2503" text-anchor="middle" class="node-title">Generate legal exact values</text>
-    <text x="2100" y="2538" text-anchor="middle" class="node-detail">Numeric: one to three bounded steps</text><text x="2100" y="2566" text-anchor="middle" class="node-detail">Other types: reviewed candidates or direct switch</text>
+    <g><rect x="1830" y="2319" width="540" height="135" rx="2" class="node emphasis"/>
+    <text x="2100" y="2354" text-anchor="middle" class="node-title">Restart from the mark</text>
+    <text x="2100" y="2389" text-anchor="middle" class="node-detail">Rewind tokens and parameters to the mark</text><text x="2100" y="2417" text-anchor="middle" class="node-detail">Probe rounds · Jev call ⑤ compares · up to 3 tries</text>
   </g>
-    <g><rect x="1830" y="2638" width="540" height="114" rx="2" class="node decision"/>
-    <text x="2100" y="2673" text-anchor="middle" class="node-title">More than one exact candidate?</text>
-    <text x="2100" y="2708" text-anchor="middle" class="node-detail">Single-target actions resolve directly</text><text x="2100" y="2736" text-anchor="middle" class="node-detail">Multiple values require a value_request</text>
+    <g><rect x="800" y="2489" width="680" height="114" rx="2" class="node normal"/>
+    <text x="1140" y="2524" text-anchor="middle" class="node-title">Validate direction Choices</text>
+    <text x="1140" y="2559" text-anchor="middle" class="node-detail">parse_choices checks options and probabilities</text><text x="1140" y="2587" text-anchor="middle" class="node-detail">keep needs no exact-value question</text>
   </g>
-    <g><rect x="1830" y="2787" width="540" height="114" rx="2" class="node jev"/>
-    <text x="2100" y="2822" text-anchor="middle" class="node-title">Jev call ③: choose exact values</text>
-    <text x="2100" y="2857" text-anchor="middle" class="node-detail">Select among program-generated legal options</text><text x="2100" y="2885" text-anchor="middle" class="node-detail">chosen_values maps back to real parameter values</text>
+    <g><rect x="800" y="2638" width="680" height="114" rx="2" class="node decision"/>
+    <text x="1140" y="2673" text-anchor="middle" class="node-title">Is an exact value needed?</text>
+    <text x="1140" y="2708" text-anchor="middle" class="node-detail">Presets and single targets resolve directly</text><text x="1140" y="2736" text-anchor="middle" class="node-detail">Several candidates need a value_request</text>
   </g>
-    <g><rect x="1830" y="2936" width="540" height="114" rx="2" class="node emphasis"/>
-    <text x="2100" y="2971" text-anchor="middle" class="node-title">Commit this round’s decision</text>
-    <text x="2100" y="3006" text-anchor="middle" class="node-detail">Controller.commit merges actual changes</text><text x="2100" y="3034" text-anchor="middle" class="node-detail">Save pending state for next-round feedback</text>
+    <g><rect x="800" y="2787" width="680" height="114" rx="2" class="node jev"/>
+    <text x="1140" y="2822" text-anchor="middle" class="node-title">Jev call ③: choose exact values</text>
+    <text x="1140" y="2857" text-anchor="middle" class="node-detail">Select among program-generated legal options</text><text x="1140" y="2885" text-anchor="middle" class="node-detail">chosen_values maps back to real parameter values</text>
+  </g>
+    <g><rect x="800" y="2936" width="680" height="114" rx="2" class="node emphasis"/>
+    <text x="1140" y="2971" text-anchor="middle" class="node-title">Commit this round’s decision</text>
+    <text x="1140" y="3006" text-anchor="middle" class="node-detail">Controller.commit records the actual changes</text><text x="1140" y="3034" text-anchor="middle" class="node-detail">Same-direction cap and dormancy are updated</text>
   </g>
     <g><rect x="800" y="3085" width="680" height="114" rx="2" class="node emphasis"/>
     <text x="1140" y="3120" text-anchor="middle" class="node-title">Prepare the next round</text>
@@ -161,11 +167,16 @@
   </g>
     <text x="540" y="1746" class="edge-label">Yes</text>
     <text x="1158" y="1840" class="edge-label">No</text>
-    <text x="540" y="1895" class="edge-label">rollback</text>
-    <text x="1158" y="1988" class="edge-label">No</text>
-    <text x="540" y="2045" class="edge-label">cooldown</text>
-    <text x="1510" y="2044" class="edge-label">ready to adjust</text>
-    <text x="2120" y="2768" class="edge-label">multiple values</text>
-    <text x="1510" y="2773" class="edge-label">one target / no extra call</text>
+    <text x="540" y="1895" class="edge-label">fixed</text>
+    <text x="1158" y="1988" class="edge-label">adaptive</text>
+    <text x="1510" y="2044" class="edge-label">due</text>
+    <text x="1158" y="2138" class="edge-label">not due</text>
+    <text x="1600" y="2204" class="edge-label">continue</text>
+    <text x="2120" y="2308" class="edge-label">back_k</text>
+    <text x="1510" y="2684" class="edge-label">No</text>
+    <text x="1158" y="2776" class="edge-label">Yes</text>
   </g>
+  <text x="2440" y="194" text-anchor="end" class="zone">Setup</text>
+  <text x="2440" y="791" text-anchor="end" class="zone">One segment (all modes)</text>
+  <text x="2440" y="1761" text-anchor="end" class="zone">Jev intervenes (adaptive only)</text>
 </svg>

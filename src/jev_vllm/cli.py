@@ -16,6 +16,7 @@ from .config import load_config
 from .jev_requests import direction_request, score_request, value_request
 from .parameters import check_backend_parameters, request_parameters
 from .runner import load_tasks, run_experiment
+from .signals import build as build_signals
 
 
 def main():
@@ -147,16 +148,21 @@ def main():
     if args.command == "preview":
         task = tasks[0]["prompt"]
         generated = "Illustrative partial answer for request-shape inspection."
-        scores = {name: {"normalized": 0.5} for name in c["jev"]["questions"]}
+        scores = {
+            name: {"normalized": 0.5, "p_severe": 0.1} for name in c["jev"]["questions"]
+        }
+        rows = [{"step": 0, "applied_parameters": c["sampling"], "scores": scores}]
+        signals = build_signals(rows, c, c["parameters"])
+        threshold = c["policy"]["signals"]["persistence_threshold"]
         directions, offered = direction_request(
             task,
             generated,
-            generated,
             0,
-            scores,
+            signals,
             c["sampling"],
             c["parameters"],
             c["jev"],
+            threshold,
         )
         selected = {qid: "keep" for qid in offered}
         numeric = next((qid for qid in offered if qid == "direction_temperature"), None)
@@ -165,21 +171,19 @@ def main():
         values, _, _ = value_request(
             task,
             generated,
-            generated,
             0,
-            scores,
+            signals,
             c["sampling"],
             selected,
             offered,
             c["jev"],
+            threshold,
         )
         print(
             json.dumps(
                 {
                     "note": "Offline illustrative JSON only; no model or Jev call was made.",
-                    "score_request": score_request(
-                        task, generated, generated, 0, c["jev"]
-                    ),
+                    "score_request": score_request(task, [generated], c["jev"]),
                     "direction_request": directions,
                     "value_request": values,
                 },

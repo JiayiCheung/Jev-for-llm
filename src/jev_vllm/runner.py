@@ -17,13 +17,15 @@ from .jev_requests import (
     difference_request,
     direction_request,
     evaluation_view,
-    objective,
     parse_choices,
     score_request,
     value_request,
 )
 from .parameters import check_backend_parameters, request_parameters
 from .policy import Controller
+from .signals import build as build_signals
+from .signals import trace as score_trace
+from .signals import trouble
 
 
 def write_file(path, text):
@@ -92,11 +94,13 @@ def execute(c, task, seed, vllm, jev, record, save):
     record.setdefault("wasted_tokens", 0)
     record.setdefault("restarts", [])
     view_cfg = c["jev"]["view"]
-    goal = objective(c["policy"]["utility_weights"])
+    questions = c["jev"]["questions"]
+    weights = c["policy"]["symptom_weights"]
+    threshold = c["policy"]["signals"]["persistence_threshold"]
     mode = c["experiment"]["mode"]
     baseline = mode == "baseline"
     rcfg = c["policy"]["restart"]
-    restart_on = rcfg["enabled"] and not baseline
+    restart_on = rcfg["enabled"] and mode == "adaptive"
 
     # Everything that belongs to the trajectory being generated now; a restart rewinds it.
     s = SimpleNamespace(
@@ -107,7 +111,7 @@ def execute(c, task, seed, vllm, jev, record, save):
         epoch=0,
         params=deepcopy(c["sampling"]),
         ctl=None if baseline else Controller(c["policy"], c["parameters"], mode),
-        marks=[{"round": 0, "tokens": 0, "correctness": None}],
+        marks=[{"round": 0, "tokens": 0, "on_track": None}],
         next_check=rcfg["first_check_round"],
     )
 
@@ -197,18 +201,15 @@ def execute(c, task, seed, vllm, jev, record, save):
         save()
         return raw
 
-    def ask_checkpoint(row, step, view, recent, scores):
+    def ask_checkpoint(row, step, view):
         """Ask Jev to continue or go back; returns (option, its mark or None, probabilities)."""
-        trace = [
-            {
-                "round": r["step"] + 1,
-                **{k: round(v["normalized"], 3) for k, v in r["scores"].items()},
-            }
-            for r in s.rows
-            if "scores" in r
-        ]
         request, options = checkpoint_request(
-            task["prompt"], view, recent, step, scores, s.marks, trace, c["jev"]
+            task["prompt"],
+            view,
+            step,
+            s.marks,
+            score_trace(s.rows, questions, weights),
+            c["jev"],
         )
         raw = ask(row, "checkpoint", request)
         picked = parse_choices(raw, request["questions"])["restart_point"]
@@ -319,17 +320,11 @@ def execute(c, task, seed, vllm, jev, record, save):
             if record.get("stop_reason"):
                 return
             continue
-        # Score the new segment with Jev: one request, four rubrics.
+        # Score the new segment with Jev: one request, every rubric.
         view = evaluation_view(
             s.segments, view_cfg["keep_full"], view_cfg["head"], view_cfg["tail"]
         )
-        evaluation = score_request(
-            task["prompt"],
-            view if view_cfg["score"] else s.text,
-            recent,
-            step,
-            c["jev"],
-        )
+        evaluation = score_request(task["prompt"], s.segments, c["jev"])
         row["evaluation_request"] = evaluation
         record["jev_calls"] += 1
         save()
@@ -339,9 +334,10 @@ def execute(c, task, seed, vllm, jev, record, save):
             evaluation_response=response, evaluation_seconds=time.perf_counter() - start
         )
         save()
-        scores = parse_scores(response, c["jev"]["questions"])
+        scores = parse_scores(response, questions)
         row["scores"] = scores
-        decision = s.ctl.decide(scores, s.params, step)
+        decision = s.ctl.decide(s.params)
+        decision["trouble"], decision["worst"] = trouble(scores, questions, weights)
         # A proposal is not an executed change: the next row records the parameters actually used.
         row["decision_will_execute"] = False
         reason = None
@@ -358,16 +354,14 @@ def execute(c, task, seed, vllm, jev, record, save):
             and len(s.rows) >= s.next_check
             and len(record["restarts"]) < rcfg["max_restarts"]
         ):
-            picked, mark, probabilities = ask_checkpoint(
-                row, step, view, recent, scores
-            )
+            picked, mark, probabilities = ask_checkpoint(row, step, view)
 
             if mark is None:
                 s.marks.append(
                     {
                         "round": len(s.rows),
                         "tokens": len(s.ids),
-                        "correctness": scores["correctness"]["normalized"],
+                        "on_track": scores["on_track"]["normalized"],
                     }
                 )
                 s.next_check = len(s.rows) + rcfg["recheck_every"]
@@ -389,17 +383,17 @@ def execute(c, task, seed, vllm, jev, record, save):
 
         # Adaptive mode: Jev picks a direction and an exact value for each parameter.
         if reason is None and decision["reason"] == "choice_ready":
+            signals = build_signals(s.rows, c, c["parameters"])
             request_choice, offered = direction_request(
                 task["prompt"],
                 view,
-                recent,
                 step,
-                scores,
+                signals,
                 s.params,
                 s.ctl.active_specs(step),
                 c["jev"],
+                threshold,
                 s.ctl.blocked(),
-                goal,
             )
             if request_choice is not None:
                 raw_choice = ask(row, "direction", request_choice)
@@ -410,20 +404,19 @@ def execute(c, task, seed, vllm, jev, record, save):
                 exact_request, exact, immediate = value_request(
                     task["prompt"],
                     view,
-                    recent,
                     step,
-                    scores,
+                    signals,
                     s.params,
                     selected,
                     offered,
                     c["jev"],
-                    goal,
+                    threshold,
                 )
                 changes = immediate
                 if exact_request is not None:
                     raw_value = ask(row, "value", exact_request)
                     changes.update(chosen_values(raw_value, exact_request, exact))
-                decision = s.ctl.commit(decision, s.params, changes, step)
+                decision = s.ctl.commit(decision, s.params, changes)
 
         row["decision"] = decision
 

@@ -10,6 +10,7 @@
   <script defer src="batch-switch.js"></script>
   <script defer src="data/overview.js"></script>
   <script defer src="dashboard.js"></script>
+  <script defer src="findings.js"></script>
 </head>
 <body>
   <header class="top">
@@ -19,6 +20,8 @@
   <main>
     <div class="intro"><div><div class="eyebrow" data-i18n="overviewEyebrow">实验概览</div><h1 data-i18n="overviewTitle">绩效与推理成本</h1><p data-i18n="intro">独立答案评分与实际推理成本。每道题按同一任务和种子配对；未能判定的答案不计入准确率。</p></div><div class="count" id="dataset-count"></div></div>
     <div class="toolbar"><label><span data-i18n="batchLabel">实验批次</span><select id="experiment-batch" aria-label="实验批次"></select></label><label><span data-i18n="controlLabel">对照组</span><select id="control"><option value="baseline" data-i18n="controlBaseline">Baseline · 仅 Qwen</option><option value="fixed" data-i18n="controlFixed">Fixed · Jev 评分</option></select></label><label><span data-i18n="filterLabel">答案筛选</span><select id="grade-filter"><option value="all" data-i18n="all">全部</option><option value="improved" data-i18n="improved">Adaptive 改进</option><option value="regressed" data-i18n="regressed">Adaptive 退步</option><option value="ungraded" data-i18n="ungraded">未评分</option></select></label><label class="search"><span data-i18n="searchLabel">搜索任务</span><input id="search" type="search" placeholder="Task ID"></label></div>
+    <div class="section-label" data-i18n="groupFindings">关键发现</div>
+    <section class="findings" id="findings"></section>
     <section class="kpis" id="kpis"></section>
     <div class="section-label" data-i18n="groupScalars">01 · 标量曲线</div>
     <section class="grid"><article class="panel"><h2 data-i18n="tokenTitle">生成 token</h2><p data-i18n="tokenDesc">按任务顺序；超过 100 道时按连续任务分箱取均值。蓝色为对照组，红色为 Adaptive。</p><div id="token-chart" class="chart"></div></article><article class="panel"><h2 data-i18n="timeTitle">请求耗时</h2><p data-i18n="timeDesc">生成与 Jev 请求的计时之和；超过 100 道时分箱取均值。</p><div id="time-chart" class="chart"></div></article></section>

@@ -48,12 +48,6 @@ def validate(c):
     for name in ("probe_rounds", "max_tries"):
         numeric(rs["difference"][name], 1, 1000, f"restart.difference.{name}", True)
 
-    rv = p["revert"]
-    if rv["rule"] not in ("consecutive_decrease", "below_best"):
-        raise ValueError(
-            "policy.revert.rule must be consecutive_decrease or below_best"
-        )
-    numeric(rv["consecutive_declines"], 1, 10000, "revert.consecutive_declines", True)
     numeric(
         p["limits"]["max_same_direction"], 0, 10000, "limits.max_same_direction", True
     )
@@ -61,14 +55,13 @@ def validate(c):
     numeric(p["dormancy"]["skip_rounds"], 0, 10000, "dormancy.skip_rounds", True)
 
     view = c["jev"]["view"]
-    for name in ("keep_full", "head", "tail"):
+    numeric(view["keep_full"], 1, 10000000, "jev.view.keep_full", True)
+    for name in ("head", "tail"):
         numeric(view[name], 0, 10000000, f"jev.view.{name}", True)
 
     for flag in (
         g["enable_thinking"],
-        rv["enabled"],
         rs["enabled"],
-        view["score"],
         c["engine"]["enforce_eager"],
         c["runtime"]["use_flashinfer_sampler"],
     ):
@@ -104,25 +97,37 @@ def validate(c):
     for name in ("max_model_len", "max_num_seqs"):
         numeric(c["engine"][name], 1, 1000000, name, True)
 
-    required = {"correctness", "relevance", "repetition", "completeness"}
+    questions = c["jev"]["questions"]
 
-    if set(c["jev"]["questions"]) != required or set(p["utility_weights"]) != required:
-        raise ValueError("Policy requires four named score dimensions")
-
-    for weight in p["utility_weights"].values():
-        numeric(weight, 0, 1, "utility weight")
-
-    if sum(p["utility_weights"].values()) <= 0:
-        raise ValueError("At least one utility weight must be positive")
-
-    for q in c["jev"]["questions"].values():
+    for q in questions.values():
         if (
             q["type"] != "score"
+            or q.get("kind") not in ("symptom", "forecast")
             or not isinstance(q["criteria"], list)
             or not 2 <= len(q["criteria"]) <= 10
             or any(not isinstance(x, str) or not x.strip() for x in q["criteria"])
         ):
             raise ValueError("Invalid Score rubric")
+
+    symptoms = {name for name, q in questions.items() if q["kind"] == "symptom"}
+
+    if not symptoms or questions.get("on_track", {}).get("kind") != "forecast":
+        raise ValueError("Rubrics need a symptom and an on_track forecast")
+
+    weights = p["symptom_weights"]
+
+    if set(weights) != symptoms:
+        raise ValueError("policy.symptom_weights must name exactly the symptom rubrics")
+
+    for weight in weights.values():
+        numeric(weight, 0, 1, "symptom weight")
+
+    if sum(weights.values()) <= 0:
+        raise ValueError("At least one symptom weight must be positive")
+
+    numeric(
+        p["signals"]["persistence_threshold"], 0, 1, "signals.persistence_threshold"
+    )
 
     return c
 

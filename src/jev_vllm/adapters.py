@@ -44,6 +44,10 @@ def parse_scores(response, questions):
             "probabilities": probabilities,
         }
 
+        if questions[name].get("kind") == "symptom":
+            # Probability that the symptom is clearly present: the two highest levels.
+            result[name]["p_severe"] = sum(probs[-2:])
+
     return result
 
 
