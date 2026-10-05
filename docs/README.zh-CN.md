@@ -85,12 +85,11 @@ Jev-for-llm/
   data/                  当前运行题目与抽样来源记录
   src/jev_vllm/          核心实现
   scripts/               离线分析与仪表盘生成脚本
-  tests/                 单元测试（python -m pytest tests）
   outputs/               实验输出
   README.md              项目说明
 ```
 
-代码风格：使用 [black](https://black.readthedocs.io/) 和 [isort](https://pycqa.github.io/isort/)（设置见 `pyproject.toml`），用 `flake8`（使用本地未入库的 `.flake8`）检查。提交前运行 `python -m black . && python -m isort . && python -m flake8 && python -m pytest tests`。
+代码风格：使用 [black](https://black.readthedocs.io/) 和 [isort](https://pycqa.github.io/isort/)（设置见 `pyproject.toml`），用 `flake8`（使用本地未入库的 `.flake8`）检查。提交前运行 `python -m black . && python -m isort . && python -m flake8`。
 
 ## 3. 文件格式与配置
 
@@ -100,9 +99,9 @@ Jev-for-llm/
 | engine | LLM 构造参数：精度、上下文长度、序列容量、显存比例、eager 模式、张量并行 |
 | runtime | 可选 FlashInfer 采样开关 |
 | jev | HTTPS 地址、接口路径、模型、直接密钥、超时、评分标准文件、请求文本视图（选择类请求携带多少已生成文字） |
-| generation | 思考开关、分段与总 token 预算、轮数上限 |
+| generation | 思考开关（`enable_thinking`）和每段 token 数（`chunk_tokens`）；除此之外运行没有别的上限 |
 | parameters_file | 参数定义文件路径 |
-| experiment | fixed/adaptive/baseline 模式、随机种子 |
+| experiment | fixed/adaptive/baseline 模式、随机种子、`max_consecutive_errors`（连续失败多少次后停止批次） |
 | policy | 从检查点重来（由 Jev 决定是否让一段很长的推理回退重做）、同方向连续上限、空转参数休眠、症状权重、信号设置 |
 
 项目固定使用当前 Python 解释器直接调用 vLLM。`engine` 在创建模型时生效；`parameters.json` 中的 SamplingParams 在下一次生成调用时生效。
@@ -164,7 +163,28 @@ Jev-for-llm/
 {"id":"example_001","prompt":"Solve 2x + 3 = 11.","reference_answer":"4"}
 ```
 
-`id` 必须是唯一非空字符串，`prompt` 必须是非空字符串。参考答案是可选元数据，不发送给 Qwen/Jev。仓库附带的题目是 GSM8K **测试集**英文原题，使用随机种子 42 无放回抽取 400 道（`python scripts/prepare_gsm8k.py --split test --count 400 --seed 42`，加 `--download` 会把原始文件下载到被 git 忽略的 `data/raw/`）。抽样记录和源文件的 SHA256 在 `data/gsm8k_sample_manifest.json`；`data/tasks_train10.jsonl` 保留了之前的 10 道训练集题，用于快速冒烟测试。答案由 `scripts/analyze_results.py` 离线判分（对显式最终答案做数值精确比对），生成过程中不使用判分器。
+`id` 必须是唯一非空字符串，`prompt` 必须是非空字符串。参考答案是可选元数据，不发送给 Qwen/Jev。题目都是 GSM8K **测试集**英文原题，用固定随机种子无放回抽取，由 `paths.dataset` 选用：
+
+| 文件 | 题数 | 用途 |
+|---|---|---|
+| `data/tasks.jsonl` | 400 | 默认样本（`python scripts/prepare_gsm8k.py --split test --count 400 --seed 42`，加 `--download` 会把原始文件下载到被 git 忽略的 `data/raw/`）。记录：`data/gsm8k_sample_manifest.json` |
+| `data/tasks_full.jsonl` | 1319 | 完整测试集，按种子 42 的随机顺序排列，所以任何前缀都是均匀随机子集，批次中断后已完成的部分仍是无偏样本。记录：`data/gsm8k_full_manifest.json` |
+| `data/tasks_heldout.jsonl` | 1199 | 完整测试集去掉调试评分设计时见过的 20 道题和 100 道试跑题。记录：`data/tasks_heldout.manifest.json` |
+| `data/tasks_pilot100.jsonl` | 100 | 试跑样本：从 400 题样本中去掉 20 道调试题后，用种子 20261005 随机抽 100 道。记录：`data/tasks_pilot100.manifest.json` |
+| `data/tasks_train10.jsonl` | 10 | 10 道训练集题，用于快速冒烟测试。记录：`data/tasks_train10.manifest.json` |
+
+抽样来源和源文件的 SHA256 都在各 manifest 里。答案由 `scripts/analyze_results.py` 离线判分，生成过程中不使用判分器。判分器只认最后一个 `oxed{}`（或只含一个数字的 `####` / `Answer:` 行），去掉数字周围的修饰，精确求值纯算术表达式和分数后做精确比对；最终框里没有可读数字判为错误；没有显式答案的运行不判分。完整规则和"疑似参考答案有问题"的标记约定见[结果分析](analysis.md)。
+
+### 从检查点重来
+
+重来让 Jev 在调参之外还能把一段很长的推理送回去重做。只在 adaptive 模式启用；fixed 只评分、从不干预，所以仍是干净的对照。由 `policy.restart` 控制：
+
+1. 从第 `first_check_round` 轮起，此后每次选择"继续"之后再隔 `recheck_every` 轮，Jev 回答一次 Choice 请求：继续、回到最开始、或回到更早的某个检查点。检查点是 Jev 被问到并回答"继续"的位置，请求里会附上当时的 `on_track` 分数。
+2. 选择回退后，运行倒回到那个位置，用新的种子生成 `probe_rounds` 段新尝试。
+3. 然后让 Jev 判断新尝试与被放弃的尝试是不是不同的思路。是，就从新尝试继续；不是，就丢弃再生成一次，最多 `max_tries` 次。
+4. 一个运行重来 `max_restarts` 次后不再被询问。没有 token 上限，所以重来的运行可能多花不少 token。
+
+每次重来都保存在 `result.json` 的 `restarts` 里（选了哪个点、每次尝试的结论、怎样结束），被放弃的轮次仍留在记录里并标为 `abandoned`。
 
 ## 4. 运行方式
 
@@ -196,7 +216,7 @@ Jev 请求数上限为：
 没有请求数上限：每个运行在模型自己停止或上下文窗口写满时结束，请求数随模型推理的长度增长
 ```
 
-fixed 每轮最多 1 次 Score；adaptive 每轮最多 1 次 Score、1 次方向 Choice、1 次具体值 Choice。模型停止、所有参数保持等情况会减少请求。
+fixed 每轮最多 1 次 Score；adaptive 每轮最多 1 次 Score、1 次方向 Choice、1 次具体值 Choice。adaptive 还会在每次重来检查时多 1 次检查点 Choice，重来后每次新尝试再多 1 次对比请求。模型停止、所有参数保持等情况会减少请求。
 
 ### 七个命令分别怎么用
 
@@ -264,7 +284,7 @@ python run.py summarize
 python run.py dashboard
 ```
 
-打开已保存实验结果的交互式可视化仪表盘。
+打开已保存实验结果的交互式可视化仪表盘，布局参照 TensorBoard：顶部标签、左侧设置栏（批次、对照、答案筛选、任务搜索、绘制哪些运行、曲线平滑）、每张卡片一张图或一张表并可下载 SVG 和 CSV。六个标签页是：总览（正确率对 token 的权衡及 95% 区间、配对散点图、配对 2×2 表与精确 McNemar 检验、成本分解）、曲线（每段的各项量）、分布、评委（`on_track` 校准与 AUC、症状触发率）、决策（参数调整方向与时机、重来）、任务（逐任务的线与可排序表，带详情抽屉）。不需要 GPU。`--no-browser` 只打印地址，`--port N` 指定端口。每个标签页的说明见[结果分析](analysis.md)。
 
 ## 5. 首次运行与结果解读
 

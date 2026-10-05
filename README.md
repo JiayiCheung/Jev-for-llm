@@ -85,12 +85,11 @@ Jev-for-llm/
   data/                  Active tasks and sampling provenance
   src/jev_vllm/          Implementation
   scripts/               Offline analysis and dashboard builders
-  tests/                 Unit tests (python -m pytest tests)
   outputs/               Generated experiment records
   README.md              Project guide
 ```
 
-Code style: [black](https://black.readthedocs.io/) and [isort](https://pycqa.github.io/isort/) with the settings in `pyproject.toml`, checked with `flake8` (using a local, untracked `.flake8`). Run `python -m black . && python -m isort . && python -m flake8 && python -m pytest tests` before committing.
+Code style: [black](https://black.readthedocs.io/) and [isort](https://pycqa.github.io/isort/) with the settings in `pyproject.toml`, checked with `flake8` (using a local, untracked `.flake8`). Run `python -m black . && python -m isort . && python -m flake8` before committing.
 
 ## 3. File formats and configuration
 
@@ -100,9 +99,9 @@ Code style: [black](https://black.readthedocs.io/) and [isort](https://pycqa.git
 | engine | LLM constructor: dtype, context size, sequence capacity, GPU memory fraction, eager execution, tensor parallelism |
 | runtime | Optional FlashInfer sampler switch |
 | jev | HTTPS base URL, endpoint, model, direct API key, timeout, rubric file, request text view (how much generated text Choice requests carry) |
-| generation | Thinking template, segment/total token budgets, round cap |
+| generation | Thinking template switch (`enable_thinking`) and tokens per segment (`chunk_tokens`); a run has no other limit |
 | parameters_file | Path to the selected parameter definitions |
-| experiment | fixed/adaptive/baseline mode, seeds |
+| experiment | fixed/adaptive/baseline mode, seeds, `max_consecutive_errors` (failures in a row before a batch stops) |
 | policy | restart from a checkpoint (Jev sends a long reasoning back), same-direction cap, dormancy of idle parameters, symptom weights, signal settings |
 
 The project always uses the active Python interpreter and native vLLM. `engine` settings apply when constructing the model; selected SamplingParams apply to the next generation call.
@@ -164,7 +163,28 @@ Tasks belong in `data/tasks.jsonl`, not in the rubric file. JSONL is strict JSON
 {"id":"example_001","prompt":"Solve 2x + 3 = 11.","reference_answer":"4"}
 ```
 
-Unique nonempty `id` and `prompt` are required. Reference fields are optional metadata and are not sent to Qwen/Jev. The included tasks are 400 original English GSM8K **test** questions sampled without replacement with seed 42 (`python scripts/prepare_gsm8k.py --split test --count 400 --seed 42`; add `--download` to fetch the raw file into the git-ignored `data/raw/`). Provenance and the SHA256 of the source file are in `data/gsm8k_sample_manifest.json`; `data/tasks_train10.jsonl` keeps the earlier ten-question training sample for quick smoke tests. Answers are graded offline by `scripts/analyze_results.py` (numeric exact match on an explicit final answer); the grader is not used while generating.
+Unique nonempty `id` and `prompt` are required. Reference fields are optional metadata and are not sent to Qwen/Jev. The task sets are original English GSM8K **test** questions, all sampled without replacement with a fixed seed; `paths.dataset` selects one:
+
+| File | Tasks | Use |
+|---|---|---|
+| `data/tasks.jsonl` | 400 | Default sample (`python scripts/prepare_gsm8k.py --split test --count 400 --seed 42`; add `--download` to fetch the raw file into the git-ignored `data/raw/`). Manifest: `data/gsm8k_sample_manifest.json` |
+| `data/tasks_full.jsonl` | 1319 | The whole test set in a seed-42 random order, so any prefix is a uniform random subset and an interrupted batch still has an unbiased sample. Manifest: `data/gsm8k_full_manifest.json` |
+| `data/tasks_heldout.jsonl` | 1199 | The full set without the 20 tasks seen while the scoring design was debugged and the 100 pilot tasks. Manifest: `data/tasks_heldout.manifest.json` |
+| `data/tasks_pilot100.jsonl` | 100 | Pilot sample: 100 tasks drawn with seed 20261005 from the 400-task sample after excluding the 20 debugging tasks. Manifest: `data/tasks_pilot100.manifest.json` |
+| `data/tasks_train10.jsonl` | 10 | Ten training-set questions for quick smoke tests. Manifest: `data/tasks_train10.manifest.json` |
+
+Provenance and the SHA256 of the source file are in the manifests. Answers are graded offline by `scripts/analyze_results.py`; the grader is not used while generating. It reads the last `oxed{}` (or a `####` / `Answer:` line that holds just a number), strips markup around the number, evaluates plain arithmetic and exact fractions, and compares exactly. A final box that holds no readable number is graded incorrect; output with no explicit answer is left ungraded. The full rules, and the convention for flagging suspect reference labels, are in [result analysis](docs/analysis.md).
+
+### Restarting from a checkpoint
+
+Restart lets Jev send a long reasoning back instead of only adjusting parameters. It is used in adaptive mode only; fixed mode scores and never intervenes, so it stays a clean control. It is controlled by `policy.restart`:
+
+1. From round `first_check_round`, and then every `recheck_every` rounds after a *continue*, Jev answers one Choice request: continue, go back to the very start, or go back to an earlier checkpoint. A checkpoint is a point where Jev was asked and said continue; its `on_track` score is shown with it.
+2. After a choice to go back, the run rewinds to that point and generates a fresh attempt of `probe_rounds` segments with a new seed.
+3. Jev is then asked whether the fresh attempt takes a different approach from the abandoned one. If it does, the run continues from it; if not, the attempt is discarded and another is generated, up to `max_tries` attempts.
+4. A run stops asking after `max_restarts` restarts. There is no token cap, so a restarted run can cost noticeably more tokens.
+
+Every restart is saved in `result.json` under `restarts` (the point chosen, each attempt's verdict, and how it ended), and abandoned rounds stay in the record marked `abandoned`.
 
 ## 4. Run modes
 
@@ -186,7 +206,7 @@ An alternate configuration is selected with `python run.py run --config "E:\Expe
 
 For an adaptive experiment set `experiment.mode` to `adaptive`; for a fixed experiment set it to `fixed`. `compare` chooses both automatically. Both groups still call Jev. Use `run --mode baseline` for a separate no-Jev reference run; [result analysis](docs/analysis.md) explains how to match it to an adaptive batch.
 
-For each task and seed, fixed mode uses at most one Jev Score request per round; adaptive uses at most three requests (Score, direction Choice, exact-value Choice). There is no cap on rounds or requests: a run ends when the model stops or the context window is full, so the request count grows with how long the model keeps reasoning.
+For each task and seed, fixed mode uses at most one Jev Score request per round; adaptive uses at most three requests per round (Score, direction Choice, exact-value Choice). Adaptive mode adds one checkpoint Choice request at each restart check and, after a restart, one comparison request per fresh attempt. There is no cap on rounds or requests: a run ends when the model stops or the context window is full, so the request count grows with how long the model keeps reasoning.
 
 ### Command recipes
 
@@ -254,7 +274,7 @@ Prints one JSON summary per result: task, seed, mode, status, stop reason, gener
 python run.py dashboard
 ```
 
-Opens an interactive dashboard of saved experiment results.
+Opens an interactive dashboard of saved experiment results, laid out like TensorBoard: a tab bar, a settings column (batch, control, answer filter, task search, which runs to draw, curve smoothing) and cards that each hold one chart or table with SVG and CSV download. The six tabs are Overview (accuracy against tokens with 95% intervals, paired scatterplots, the paired 2×2 table with the exact McNemar test, cost breakdown), Curves (every per-segment quantity), Distributions, Judge (`on_track` calibration and AUC, symptom trigger rates), Behavior (direction and timing of parameter changes, restarts) and Tasks (per-task lines and a sortable table with a detail drawer). It needs no GPU. Use `--no-browser` to print the URL only and `--port N` to pick a port. [Result analysis](docs/analysis.md) describes each tab.
 
 ## 5. First run and results
 
