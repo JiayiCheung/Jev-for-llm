@@ -97,8 +97,14 @@
     # Initial seeds. Each segment uses its initial seed plus the segment index.
     "seeds": [
       42 # Experiment seed 1.
-    ]
+    ],
 
+    # A run that fails (API still down after all retries, GPU error, ...) is recorded as an
+    # error and skipped so a long batch keeps going; after this many failures in a row the
+    # batch stops, because something shared is probably gone. Fix it, then run the same
+    # command again with --experiment-id <id> --resume: only the runs that are not complete
+    # run again, each from its first segment.
+    "max_consecutive_errors": 3
   },
 
   # Controller settings.

@@ -9,6 +9,7 @@ from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
+from uuid import uuid4
 
 from .adapters import choice_response, parse_scores, score_response
 from .jev_requests import (
@@ -508,3 +509,94 @@ def run_experiment(c, task, seed, vllm, jev, experiment=None):
         print("Results:", directory)
 
     return record
+
+
+def run_batch(
+    c, tasks, modes, vllm, jev, experiment_id, command, completed=(), max_errors=3
+):
+    """Run every (task, seed, mode) of the plan that is not in `completed`, one after another.
+
+    A run that raises is recorded in its own result.json (status "error"), reported and skipped,
+    so one bad run does not end a night of work; after `max_errors` failures in a row the batch
+    stops, because something shared (the API key, the network, the GPU) is then probably gone.
+    Ctrl+C is not caught. Returns the list of failures; re-running the same command with
+    --resume runs exactly the runs that did not complete.
+    """
+    seeds = c["experiment"]["seeds"]
+    total = len(tasks) * len(seeds) * len(modes)
+    done = sum(
+        (task["id"], seed, mode) in completed
+        for task in tasks
+        for seed in seeds
+        for mode in modes
+    )
+    failures, streak, fresh = [], 0, 0
+    started = time.perf_counter()
+    key = getattr(jev, "key", None)
+
+    for task in tasks:
+        for seed in seeds:
+            for mode in modes:
+                if (task["id"], seed, mode) in completed:
+                    continue
+
+                conf = deepcopy(c)
+                conf["experiment"]["mode"] = mode
+                vllm.reset_cache()  # every run starts from an empty prefix cache
+
+                try:
+                    run_experiment(
+                        conf,
+                        task,
+                        seed,
+                        vllm,
+                        jev,
+                        {
+                            "id": experiment_id,
+                            "run_id": uuid4().hex,
+                            "pair_id": f"{experiment_id}:{task['id']}:{seed}",
+                            "command": command,
+                            "prefix_cache_reset": True,
+                        },
+                    )
+                except Exception as exc:
+                    message = f"{type(exc).__name__}: {exc}"
+                    message = message.replace(key, "[REDACTED]") if key else message
+                    failures.append(
+                        {
+                            "task": task["id"],
+                            "seed": seed,
+                            "mode": mode,
+                            "error": message,
+                        }
+                    )
+                    streak += 1
+                    print(
+                        f"FAILED {task['id']} seed={seed} {mode} "
+                        f"({streak} in a row): {message}",
+                        flush=True,
+                    )
+
+                    if streak >= max_errors:
+                        print(
+                            f"Stopping after {streak} failed runs in a row. Fix the cause, "
+                            "then run the same command with --resume.",
+                            flush=True,
+                        )
+
+                        return failures
+
+                    continue
+
+                streak = 0
+                fresh += 1
+                done += 1
+                left = total - done - len(failures)
+                eta = (time.perf_counter() - started) / fresh * left
+                print(
+                    f"[{done}/{total}] {task['id']} seed={seed} {mode} done; about "
+                    f"{int(eta // 3600)}h{int(eta % 3600 // 60):02d}m left at this pace",
+                    flush=True,
+                )
+
+    return failures

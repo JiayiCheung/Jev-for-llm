@@ -164,11 +164,12 @@ def build_catalog(repo_root, analysis_dir, output_dir):
             subprocess.run(command, check=True, stdout=subprocess.DEVNULL)
         modes = (["baseline", "fixed", "adaptive"] if batch_id in joins else ["fixed", "adaptive"]) if kind == "paired" else experiment["modes"]
         cards.append({"id": batch_id, "slug": slug, "kind": kind, "modes": modes,
-                      "tasks": experiment["tasks"], "runs": experiment["runs"], "completed": experiment["completed"]})
+                      "tasks": experiment["tasks"], "runs": experiment["runs"], "completed": experiment["completed"],
+                      "created": experiment["created"]})
     if not cards:
         raise ValueError("No completed single-mode or paired experiment results were found")
     payload = "window.JEV_BATCHES = " + json.dumps(
-        [{"id": card["id"], "slug": card["slug"], "modes": card["modes"], "tasks": card["tasks"]}
+        [{"id": card["id"], "slug": card["slug"], "modes": card["modes"], "tasks": card["tasks"], "created": card["created"]}
          for card in cards], ensure_ascii=False, separators=(",", ":")) + ";\n"
     for card in cards:
         target = output_dir / "batches" / card["slug"] / "data" / "batches.js"
@@ -208,6 +209,16 @@ def launch_dashboard(repo_root, *, baseline_dir=None, fixed_dir=None, output_dir
     class DashboardHandler(SimpleHTTPRequestHandler):
         def __init__(self, *args, **kwargs):
             super().__init__(*args, directory=str(output_dir.resolve()), **kwargs)
+
+        def end_headers(self):
+            # The pages are regenerated whenever the dashboard code changes: never serve a stale copy.
+            self.send_header("Cache-Control", "no-cache")
+            super().end_headers()
+
+        def log_request(self, code="-", size="-"):
+            # Only failed requests are worth a line; every page loads dozens of data files.
+            if str(code)[:1] in ("4", "5"):
+                super().log_request(code, size)
 
         def do_GET(self):
             path = unquote(urlsplit(self.path).path)

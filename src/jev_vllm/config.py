@@ -32,6 +32,8 @@ def validate(c):
     if not e["seeds"]:
         raise ValueError("Empty seeds")
 
+    numeric(e.get("max_consecutive_errors", 3), 1, 1000, "max_consecutive_errors", True)
+
     for seed in e["seeds"]:
         numeric(seed, 0, 2**31 - 1, "seed", True)
 

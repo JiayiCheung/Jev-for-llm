@@ -15,7 +15,7 @@ from .clients import JsonClient
 from .config import load_config
 from .jev_requests import direction_request, score_request, value_request
 from .parameters import check_backend_parameters, request_parameters
-from .runner import load_tasks, run_experiment
+from .runner import load_tasks, run_batch
 from .signals import build as build_signals
 
 
@@ -96,8 +96,8 @@ def main():
         parser.error(
             "--experiment-id is only for run/compare and must be a safe ID (1–80 characters)"
         )
-    if args.resume and not args.experiment_id:
-        parser.error("--resume requires --experiment-id")
+    if args.resume and args.command not in ("run", "compare"):
+        parser.error("--resume is only for run/compare")
     if args.mode and args.command != "run":
         parser.error("--mode is only available for run")
     if args.command == "dashboard":
@@ -271,13 +271,8 @@ def main():
             flush=True,
         )
 
-    experiment_id = (
-        args.experiment_id
-        or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid4().hex[:8]
-    )
     manifest_dir = Path(c["paths"]["outputs"]) / "experiments"
     manifest_dir.mkdir(parents=True, exist_ok=True)
-    manifest_path = manifest_dir / f"{experiment_id}.json"
     comparable_config = deepcopy(c)
     comparable_config["jev"].pop("api_key", None)
     comparable_config["jev"].pop(
@@ -285,6 +280,9 @@ def main():
     )  # transport setting, not an experimental condition
     comparable_config["experiment"].pop("mode", None)
     comparable_config["experiment"].pop("seeds", None)
+    comparable_config["experiment"].pop(
+        "max_consecutive_errors", None
+    )  # how to react, not what to run
     comparable_config["paths"].pop("outputs", None)
     condition_hash = hashlib.sha256(
         json.dumps(
@@ -292,7 +290,7 @@ def main():
         ).encode("utf-8")
     ).hexdigest()
     manifest = {
-        "id": experiment_id,
+        "id": None,
         "command": args.command,
         "created_utc": datetime.now(timezone.utc).isoformat(),
         "task_ids": [task["id"] for task in tasks],
@@ -309,24 +307,46 @@ def main():
         "planned_runs": len(tasks) * len(c["experiment"]["seeds"]) * len(modes),
         "condition_hash": condition_hash,
     }
+    plan_keys = (
+        "command",
+        "task_ids",
+        "task_hashes",
+        "seeds",
+        "modes",
+        "planned_runs",
+        "condition_hash",
+    )
+    experiment_id = args.experiment_id
+    if args.resume and not experiment_id:
+        # "python run.py compare --resume": continue the most recent batch with this exact plan
+        matching = []
+        for path in manifest_dir.glob("*.json"):
+            try:
+                prior = json.loads(path.read_text(encoding="utf-8"))
+            except ValueError:
+                continue
+            if all(prior.get(k) == manifest[k] for k in plan_keys):
+                matching.append((prior.get("created_utc", ""), prior["id"]))
+        if not matching:
+            raise ValueError(
+                "--resume found no earlier batch with the same command, tasks, seeds, modes "
+                "and configuration; start one without --resume, or give --experiment-id"
+            )
+        experiment_id = max(matching)[1]
+        print(f"Resuming the most recent matching batch: {experiment_id}", flush=True)
+    experiment_id = (
+        experiment_id
+        or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ") + "-" + uuid4().hex[:8]
+    )
+    manifest["id"] = experiment_id
+    manifest_path = manifest_dir / f"{experiment_id}.json"
     if manifest_path.exists():
         if not args.resume:
             raise ValueError(
                 f"Experiment ID already exists; use --resume to continue: {experiment_id}"
             )
         prior = json.loads(manifest_path.read_text(encoding="utf-8"))
-        if any(
-            prior.get(k) != manifest[k]
-            for k in (
-                "command",
-                "task_ids",
-                "task_hashes",
-                "seeds",
-                "modes",
-                "planned_runs",
-                "condition_hash",
-            )
-        ):
+        if any(prior.get(k) != manifest[k] for k in plan_keys):
             raise ValueError(
                 f"Existing experiment ID has a different plan: {experiment_id}"
             )
@@ -335,13 +355,25 @@ def main():
             json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
         )
     print(f"Experiment ID: {experiment_id}", flush=True)
-    completed = set()
+    print(
+        "If this run is interrupted, continue it with: python run.py "
+        f"{args.command} --resume   (or add --experiment-id {experiment_id})",
+        flush=True,
+    )
+    completed, unfinished = set(), 0
     if args.resume:
         for path in Path(c["paths"]["outputs"]).rglob("result.json"):
-            item = json.loads(path.read_text(encoding="utf-8"))
-            if (item.get("experiment") or {}).get("id") != experiment_id or item.get(
-                "status"
-            ) != "completed":
+            try:
+                item = json.loads(path.read_text(encoding="utf-8"))
+            except (
+                ValueError
+            ):  # a record cut off by a crash: that run is simply not complete
+                unfinished += 1
+                continue
+            if (item.get("experiment") or {}).get("id") != experiment_id:
+                continue
+            if item.get("status") != "completed":
+                unfinished += 1
                 continue
             key = (
                 item["task"]["id"],
@@ -351,30 +383,39 @@ def main():
             if key in completed:
                 raise ValueError(f"Duplicate completed run in batch: {key}")
             completed.add(key)
-        print(f"Resume: {len(completed)} completed runs will be skipped", flush=True)
+        print(
+            f"Resume: {len(completed)} of {manifest['planned_runs']} runs are complete and "
+            f"will be skipped; {unfinished} unfinished earlier attempt(s) are ignored "
+            "and those runs start again from their first segment",
+            flush=True,
+        )
 
-    for task in tasks:
-        for seed in c["experiment"]["seeds"]:
-            for mode in modes:
-                if (task["id"], seed, mode) in completed:
-                    continue
-                conf = deepcopy(c)
-                conf["experiment"]["mode"] = mode
+    failures = run_batch(
+        c,
+        tasks,
+        modes,
+        vllm,
+        jev,
+        experiment_id,
+        args.command,
+        completed,
+        c["experiment"].get("max_consecutive_errors", 3),
+    )
 
-                vllm.reset_cache()  # every run starts from an empty prefix cache
-                run_experiment(
-                    conf,
-                    task,
-                    seed,
-                    vllm,
-                    jev,
-                    {
-                        "id": experiment_id,
-                        "run_id": uuid4().hex,
-                        "pair_id": f"{experiment_id}:{task['id']}:{seed}",
-                        "command": args.command,
-                        "prefix_cache_reset": True,
-                    },
-                )
+    if failures:
+        print(f"{len(failures)} run(s) failed:", flush=True)
+        for failure in failures:
+            print(
+                f"  {failure['task']} seed={failure['seed']} {failure['mode']}: "
+                f"{failure['error']}",
+                flush=True,
+            )
+        print(
+            f"To retry only what is missing: run the same command with "
+            f"--experiment-id {experiment_id} --resume",
+            flush=True,
+        )
+
+        return 1
 
     return 0

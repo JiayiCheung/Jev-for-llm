@@ -160,7 +160,7 @@ def main():
     batch_id = fixed[0].get("experiment_id") or "experiment"
     (output / "data" / "overview.js").write_text("window.JEV_OVERVIEW = " + json.dumps({"tasks": summary, "count": len(summary), "modes": available, "batch": batch_id, "parameterActivity": activity}, ensure_ascii=False, separators=(",", ":")) + ";\n", encoding="utf-8")
     (output / "data" / "batches.js").write_text("window.JEV_BATCHES = " + json.dumps([{"id": batch_id, "slug": hashlib.sha256(batch_id.encode()).hexdigest()[:20], "modes": available, "tasks": len(summary)}], ensure_ascii=False) + ";\n", encoding="utf-8")
-    for asset in ("index.html", "dashboard.css", "dashboard.js", "findings.js", "batch-switch.js"):
+    for asset in ("index.html", "explorer.css", "core.js", "explorer.js", "tab-overview.js", "tab-curves.js", "tab-judge.js", "tab-tasks.js", "batch-switch.js"):
         shutil.copy2(ASSETS / asset, output / asset)
     print(f"Dashboard: {output / 'index.html'} ({len(summary)} paired tasks, {len(summary)*len(available)} runs)")
 

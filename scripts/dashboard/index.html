@@ -3,37 +3,53 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Jev · 绩效与推理成本</title>
-  <link rel="stylesheet" href="dashboard.css">
+  <title>Jev · 实验探索</title>
+  <link rel="stylesheet" href="explorer.css">
   <script>window.JEV_TASKS = {};</script>
   <script defer src="data/batches.js"></script>
   <script defer src="batch-switch.js"></script>
   <script defer src="data/overview.js"></script>
-  <script defer src="dashboard.js"></script>
-  <script defer src="findings.js"></script>
+  <script defer src="core.js"></script>
+  <script defer src="tab-overview.js"></script>
+  <script defer src="tab-curves.js"></script>
+  <script defer src="tab-judge.js"></script>
+  <script defer src="tab-tasks.js"></script>
+  <script defer src="explorer.js"></script>
 </head>
 <body>
   <header class="top">
-    <div><strong>Jev</strong><span class="bar">/</span> <span data-i18n="siteTitle">绩效与推理成本</span></div>
-    <div class="top-right"><a id="all-batches" href="../../" hidden>全部批次 / All batches</a><div class="language-switch" aria-label="Language"><button id="lang-zh" type="button" lang="zh-CN" aria-pressed="true">中文</button><button id="lang-en" type="button" lang="en" aria-pressed="false">English</button></div></div>
+    <div class="brand"><strong>Jev</strong><span class="bar">/</span><span data-i18n="siteTitle">实验探索</span></div>
+    <nav class="tabs" role="tablist">
+      <button type="button" class="tab-btn" role="tab" data-tab="overview" data-i18n="tabOverview">总览</button>
+      <button type="button" class="tab-btn" role="tab" data-tab="curves" data-i18n="tabCurves">曲线</button>
+      <button type="button" class="tab-btn" role="tab" data-tab="distributions" data-i18n="tabDistributions">分布</button>
+      <button type="button" class="tab-btn" role="tab" data-tab="judge" data-i18n="tabJudge">评委</button>
+      <button type="button" class="tab-btn" role="tab" data-tab="behavior" data-i18n="tabBehavior">决策</button>
+      <button type="button" class="tab-btn" role="tab" data-tab="tasks" data-i18n="tabTasks">任务</button>
+    </nav>
+    <div class="language-switch" aria-label="Language"><button id="lang-zh" type="button" lang="zh-CN" aria-pressed="true">中文</button><button id="lang-en" type="button" lang="en" aria-pressed="false">English</button></div>
   </header>
-  <main>
-    <div class="intro"><div><div class="eyebrow" data-i18n="overviewEyebrow">实验概览</div><h1 data-i18n="overviewTitle">绩效与推理成本</h1><p data-i18n="intro">独立答案评分与实际推理成本。每道题按同一任务和种子配对；未能判定的答案不计入准确率。</p></div><div class="count" id="dataset-count"></div></div>
-    <div class="toolbar"><label><span data-i18n="batchLabel">实验批次</span><select id="experiment-batch" aria-label="实验批次"></select></label><label><span data-i18n="controlLabel">对照组</span><select id="control"><option value="baseline" data-i18n="controlBaseline">Baseline · 仅 Qwen</option><option value="fixed" data-i18n="controlFixed">Fixed · Jev 评分</option></select></label><label><span data-i18n="filterLabel">答案筛选</span><select id="grade-filter"><option value="all" data-i18n="all">全部</option><option value="improved" data-i18n="improved">Adaptive 改进</option><option value="regressed" data-i18n="regressed">Adaptive 退步</option><option value="ungraded" data-i18n="ungraded">未评分</option></select></label><label class="search"><span data-i18n="searchLabel">搜索任务</span><input id="search" type="search" placeholder="Task ID"></label></div>
-    <div class="section-label" data-i18n="groupFindings">关键发现</div>
-    <section class="findings" id="findings"></section>
-    <section class="kpis" id="kpis"></section>
-    <div class="section-label" data-i18n="groupScalars">01 · 标量曲线</div>
-    <section class="grid"><article class="panel"><h2 data-i18n="tokenTitle">生成 token</h2><p data-i18n="tokenDesc">按任务顺序；超过 100 道时按连续任务分箱取均值。蓝色为对照组，红色为 Adaptive。</p><div id="token-chart" class="chart"></div></article><article class="panel"><h2 data-i18n="timeTitle">请求耗时</h2><p data-i18n="timeDesc">生成与 Jev 请求的计时之和；超过 100 道时分箱取均值。</p><div id="time-chart" class="chart"></div></article></section>
-    <div class="section-label" data-i18n="groupPaired">02 · 配对关系</div>
-    <section class="grid"><article class="panel"><h2 data-i18n="tokenScatterTitle">配对 token</h2><p data-i18n="scatterDesc">横轴为对照组，纵轴为 Adaptive；点在对角线下方表示 Adaptive 更少。</p><div id="token-scatter" class="chart"></div></article><article class="panel"><h2 data-i18n="timeScatterTitle">配对请求耗时</h2><p data-i18n="scatterDesc">横轴为对照组，纵轴为 Adaptive；点在对角线下方表示 Adaptive 更少。</p><div id="time-scatter" class="chart"></div></article></section>
-    <div class="section-label" data-i18n="groupDistributions">03 · 双指标权衡</div>
-    <section class="panel tradeoff-panel"><div class="panel-head"><div><h2 data-i18n="tradeoffTitle">token 与请求耗时如何共同变化</h2><p data-i18n="tradeoffDesc">按同一任务的两个差值归类；等于零的任务单列。</p></div><span id="tradeoff-count"></span></div><div id="tradeoff-metrics" class="tradeoff-metrics"></div><div id="tradeoff-matrix" class="tradeoff-matrix"></div><div id="tradeoff-neutral" class="tradeoff-neutral"></div></section>
-    <div class="section-label" data-i18n="groupOutcomes">04 · 答案与控制开销</div>
-    <section class="grid"><article class="panel"><h2 data-i18n="outcomeTitle">配对答案结果</h2><p data-i18n="outcomeDesc">只比较同一任务与种子；未评分单列，不计入正确率。</p><div id="outcome-chart" class="chart"></div></article><article class="panel"><h2 data-i18n="costTitle">Jev 调用与 token 变化</h2><p data-i18n="costDesc">横轴为 Adaptive Jev 调用次数，纵轴为 Adaptive 减对照组的生成 token。</p><div id="cost-scatter" class="chart"></div></article></section>
-    <section class="panel table-panel"><div class="panel-head"><div><h2 data-i18n="tasksTitle">任务明细</h2><p data-i18n="tasksDesc">点击一行查看 Score、参数和逐轮成本。表格每页 50 道题。</p></div><span id="table-count"></span></div><p id="delta-note" class="delta-note" role="note"></p><div class="table-scroll"><table><thead><tr><th data-i18n="thTask">任务 / 种子</th><th data-i18n="thControlAnswer">对照答案</th><th data-i18n="thAdaptiveAnswer">Adaptive 答案</th><th id="th-delta-token" data-i18n="thDeltaToken">Δ token</th><th id="th-delta-time" data-i18n="thDeltaTime">Δ 请求耗时</th><th data-i18n="thCalls">Adaptive Jev 调用</th><th data-i18n="thChanges">实际参数变更</th></tr></thead><tbody id="task-rows"></tbody></table></div><div class="pagination"><button id="prev" data-i18n="prev">上一页</button><span id="page-status"></span><button id="next" data-i18n="next">下一页</button></div></section>
-    <section id="detail" class="detail" hidden><div class="detail-head"><div><div class="eyebrow" data-i18n="traceEyebrow">任务轨迹</div><h2 id="detail-title"></h2></div><button id="close-detail" data-i18n="close">关闭</button></div><div id="prompt" class="prompt"></div><div id="run-stats" class="run-stats"></div><div class="grid"><article class="panel"><h3 data-i18n="scoreTitle">Jev Score 与效用</h3><p data-i18n="scoreDesc">选择一项 0–1 归一化 Score，与效用逐轮对比。</p><label class="score-select"><span data-i18n="scoreMetric">Score 指标</span><select id="score-metric"></select></label><div id="score-chart" class="chart"></div></article><article class="panel"><h3 data-i18n="roundTimeTitle">生成与 Jev 请求耗时</h3><p data-i18n="roundTimeDesc">逐轮计时，单位秒。</p><div id="round-time-chart" class="chart"></div></article></div><article class="panel"><h3 data-i18n="paramTitle">采样参数轨迹</h3><div class="param-bar"><label><span data-i18n="paramLabel">参数</span><select id="parameter"></select></label><span data-i18n="paramDesc">显示各模式实际用于每轮生成的值</span></div><div id="param-chart" class="chart"></div></article><article class="panel"><h3 data-i18n="eventsTitle">逐轮事件</h3><div class="table-scroll"><table><thead><tr><th data-i18n="thRound">轮次</th><th data-i18n="thTokenRange">Token 区间</th><th data-i18n="thScoreUtility">Score / 效用</th><th data-i18n="thJevRequests">Jev 请求</th><th data-i18n="thJevTokens">Jev token in / out</th><th data-i18n="thDecision">决策</th><th data-i18n="thAppliedNext">下一轮生效</th></tr></thead><tbody id="round-rows"></tbody></table></div></article><details class="answer"><summary data-i18n="answerSummary">查看三组最终答案末段与结果文件路径</summary><div id="answers"></div></details></section>
-    <p class="footnote" data-i18n="footnote">准确率仅统计可独立判分的配对任务。Jev Score 是过程反馈，不等同于答案正确率。计时受任务长度、设备状态和模型加载影响；小样本结果仅说明本批次。</p>
-  </main>
+  <div class="shell">
+    <aside class="side">
+      <section><h4 data-i18n="sideBatch">实验批次</h4><select id="experiment-batch" aria-label="实验批次"></select><div id="dataset-count" class="side-note"></div></section>
+      <section><h4 data-i18n="sideControl">对照组</h4>
+        <select id="control"><option value="baseline" data-i18n="controlBaseline">Baseline · 仅 Qwen</option><option value="fixed" data-i18n="controlFixed">Fixed · Jev 评分</option></select></section>
+      <section><h4 data-i18n="sideFilter">答案筛选</h4>
+        <select id="grade-filter"><option value="all" data-i18n="all">全部</option><option value="improved" data-i18n="improved">Adaptive 改进</option><option value="regressed" data-i18n="regressed">Adaptive 退步</option><option value="ungraded" data-i18n="ungraded">未评分</option></select></section>
+      <section><h4 data-i18n="sideSearch">搜索任务</h4><input id="search" type="search" placeholder="gsm8k_test_00[0-9]+" spellcheck="false"></section>
+      <section><h4 data-i18n="sideRuns">运行</h4><div id="run-toggles" class="run-toggles"></div></section>
+      <section data-for="curves distributions judge tasks"><h4 data-i18n="sideSmoothing">平滑</h4><div class="slider"><input id="smoothing" type="range" min="0" max="0.99" step="0.01" value="0"><output id="smoothing-value">0.00</output></div>
+        <label class="side-check" data-for="curves distributions judge"><input id="show-band" type="checkbox"><span data-i18n="sideBand">显示 95% 范围带</span></label></section>
+    </aside>
+    <main id="view">
+      <div class="tab" id="tab-overview" hidden></div>
+      <div class="tab" id="tab-curves" hidden></div>
+      <div class="tab" id="tab-distributions" hidden></div>
+      <div class="tab" id="tab-judge" hidden></div>
+      <div class="tab" id="tab-behavior" hidden></div>
+      <div class="tab" id="tab-tasks" hidden></div>
+    </main>
+  </div>
+  <aside id="drawer" class="drawer" hidden></aside>
 </body>
 </html>

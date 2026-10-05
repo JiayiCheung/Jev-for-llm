@@ -287,7 +287,9 @@ python run.py run
 
 决策只是对下一段的提议，**下一轮实际请求才证明新参数被使用**。`decision_will_execute` 也不能单独证明下一次调用已成功。
 
-`completed` 表示循环正常结束，不代表答案正确。结束源于模型自己停止或上下文窗口写满（`stop_reason` 为 `model_stop` 或 `context_budget`）。Ctrl+C 通常会保存 interrupted 状态；强制结束进程可能留下 running 状态。程序保留部分记录。中断后用相同配置和批次 ID 执行 `python run.py compare --experiment-id 批次ID --resume`，已完成的题目/种子/模式会跳过；中断的运行从第一段重新开始，不会接续未完成的段。Jev 临时 HTTP 5xx 错误最多额外重试两次，仍失败就停止后续实验。
+`completed` 表示循环正常结束，不代表答案正确。结束源于模型自己停止或上下文窗口写满（`stop_reason` 为 `model_stop` 或 `context_budget`）。Ctrl+C 通常会保存 interrupted 状态；强制结束进程可能留下 running 状态。程序保留部分记录。中断后用相同配置和批次 ID 执行 `python run.py compare --experiment-id 批次ID --resume`，已完成的题目/种子/模式会跳过；中断的运行从第一段重新开始，不会接续未完成的段。
+
+**长批次与断点续跑。** `run`/`compare` 会打印批次 ID，并在每个运行完成后打印一行进度（`[已完成/总数] … 按当前速度还需约 2h15m`）。续跑的最小单位是一个运行（一道题、一个种子、一个模式，通常一到几分钟，偶尔更长）：无论是 Ctrl+C、关掉窗口、断电还是断网，都用相同的配置再执行同一条命令，并加上 `--resume`（例如 `python run.py compare --resume`）：会接着最近一个计划完全相同的批次继续，并打印它的批次 ID；想指定某个批次时再加 `--experiment-id <批次ID>`。`result.json` 状态为 `completed` 的运行会跳过；未完成或损坏的记录会被忽略，该运行从第一段重新开始（旧目录保留作审计，分析时不计入）。题目列表、种子、模式或实验条件只要有变化就会被拒绝，所以一个批次不会混入两套计划；同理，续跑的命令里不要再加 `--task`、`--start-task`。Jev 的临时 HTTP 和网络错误按 `jev.retry_delays` 里的间隔重试；仍然失败的运行会记为 `error`、打印并跳过，批次继续；连续失败 `experiment.max_consecutive_errors` 次就停止（说明共用的部分可能出问题了），退出码为 1，之后用同样的 `--resume` 命令只补跑缺的部分。
 
 配置好密钥后，可将控制台输出存到本地已有日志目录：
 

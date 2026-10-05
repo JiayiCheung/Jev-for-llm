@@ -1,6 +1,7 @@
 """Incrementally index Jev runs and export auditable paired comparisons."""
 
 import argparse
+import ast
 import csv
 import hashlib
 import json
@@ -10,9 +11,10 @@ from collections import Counter as collections_counter
 from collections import defaultdict
 from copy import deepcopy
 from decimal import Decimal, InvalidOperation
+from fractions import Fraction
 from pathlib import Path
 
-VERSION = 5
+VERSION = 6
 NUMBER = r"[-+]?(?:\d+(?:,\d{3})*(?:\.\d+)?|\.\d+)"
 
 
@@ -29,6 +31,7 @@ def condition_hash(config):
     copy.get("experiment", {}).pop("mode", None)
     # Seeds and output paths identify runs, not the scientific conditions.
     copy.get("experiment", {}).pop("seeds", None)
+    copy.get("experiment", {}).pop("max_consecutive_errors", None)
     copy.get("paths", {}).pop("outputs", None)
     return digest(copy)
 
@@ -38,6 +41,140 @@ def _number(value):
         return Decimal(str(value).replace(",", "").strip())
     except (InvalidOperation, ValueError):
         return None
+
+
+def _boxed_contents(text):
+    r"""Contents of every \boxed{...} in order, with nested braces matched."""
+    out = []
+    for match in re.finditer(r"\\boxed\s*\{", text):
+        depth, i = 1, match.end()
+        while i < len(text) and depth:
+            depth += {"{": 1, "}": -1}.get(text[i], 0)
+            i += 1
+        if depth == 0:
+            out.append((match.start(), text[match.end() : i - 1]))
+    return out
+
+
+WORDS = {
+    word: value
+    for value, word in enumerate(
+        "zero one two three four five six seven eight nine ten eleven twelve thirteen "
+        "fourteen fifteen sixteen seventeen eighteen nineteen twenty".split()
+    )
+}
+
+
+def _exact(value):
+    """Decimal and Fraction values compare exactly as fractions."""
+    return Fraction(value) if isinstance(value, Decimal) else value  # None stays None
+
+
+def _show(value):
+    if isinstance(value, Decimal) or value.denominator == 1:
+        return str(value) if isinstance(value, Decimal) else str(value.numerator)
+    return format(Decimal(value.numerator) / Decimal(value.denominator), "f")
+
+
+def _safe_value(text):
+    r"""Value of a plain arithmetic expression such as `12 \times (3 + 4)`, or None.
+
+    Only numbers, + - * / ^, parentheses and \frac are accepted; exponents must be small integers.
+    """
+    s = re.sub(r"\\(?:left|right)\b", "", text)
+    s = re.sub(r"\\[,;!:]|\\ |\\\$|\$", "", s)
+    s = re.sub(r"\\(?:times|cdot)\b|[×·]", "*", s)
+    s = re.sub(r"\\div\b|÷", "/", s).replace("−", "-")
+    s = re.sub(r"\^\s*\{([^{}]*)\}", r"**(\1)", s).replace("^", "**")
+    if re.search(
+        r"[\d.)]\s+[\d.(]", s
+    ):  # two numbers side by side are not one expression
+        return None
+    s = s.replace(" ", "")
+    for _ in range(20):
+        s, count = re.subn(
+            r"\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}", r"((\1)/(\2))", s
+        )
+        if not count:
+            break
+    s = s.replace("{", "(").replace("}", ")")
+    s = re.sub(r"(?<=\d),(?=\d{3}(?!\d))", "", s)
+    if not s or not re.fullmatch(r"[0-9.+\-*/()]+", s):
+        return None
+
+    def walk(node):
+        if isinstance(node, ast.Expression):
+            return walk(node.body)
+        if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+            return Fraction(str(node.value))
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
+            value = walk(node.operand)
+            return value if isinstance(node.op, ast.UAdd) else -value
+        if isinstance(node, ast.BinOp):
+            left, right = walk(node.left), walk(node.right)
+            if isinstance(node.op, ast.Add):
+                return left + right
+            if isinstance(node.op, ast.Sub):
+                return left - right
+            if isinstance(node.op, ast.Mult):
+                return left * right
+            if isinstance(node.op, ast.Div):
+                return left / right
+            if (
+                isinstance(node.op, ast.Pow)
+                and right.denominator == 1
+                and abs(right) <= 200
+            ):
+                return left ** int(right)
+        raise ValueError("unsupported")
+
+    try:
+        return walk(ast.parse(s, mode="eval"))
+    except (SyntaxError, ValueError, ZeroDivisionError, OverflowError, RecursionError):
+        return None
+
+
+def _plain_number(text, units=False):
+    r"""The number a short answer expression states, or None.
+
+    Markup that only decorates a number is removed: $, \$, \!, \, , **, \mathbf{..},
+    \text{..} units and a percent sign. Text after "=" wins, as in "100 - 84 = 16".
+    With units=True words after the number are allowed (\boxed{16 hours}).
+    Exact fractions, plain arithmetic and spelled-out numbers up to twenty are read as numbers.
+    """
+    fraction = re.fullmatch(
+        r"\s*\$*\s*\\[dt]?frac\s*\{\s*("
+        + NUMBER
+        + r")\s*\}\s*\{\s*("
+        + NUMBER
+        + r")\s*\}\s*\$*\s*",
+        text,
+    )
+    if fraction:
+        top, bottom = _number(fraction.group(1)), _number(fraction.group(2))
+        return top / bottom if top is not None and bottom else None
+    # a unit in \text{..} is dropped, a number in \text{..} is kept
+    text = re.sub(
+        r"\\(?:text|mathrm|textrm)\s*\{([^{}]*)\}",
+        lambda m: (
+            m.group(1) if re.fullmatch(r"\s*" + NUMBER + r"\s*", m.group(1)) else " "
+        ),
+        text,
+    )
+    text = text.split("=")[-1]
+    expression = text
+    text = re.sub(
+        r"\\(?:mathbf|textbf|boldsymbol|bf|mathit|displaystyle)\b\s*", "", text
+    )
+    text = re.sub(r"\\[,;!: ]|\\\$|\\%|[$*{}]|%", "", text)
+    text = text.strip().rstrip(".").strip()
+    if text.lower() in WORDS:  # \boxed{\textbf{three}}
+        return Decimal(WORDS[text.lower()])
+    pattern = r"(" + NUMBER + r")" + (r"(?:\s*[A-Za-z][A-Za-z ]*)?" if units else r"")
+    found = re.fullmatch(pattern, text)
+    if found:
+        return _number(found.group(1))
+    return _safe_value(expression) if re.search(r"[0-9]", expression) else None
 
 
 def grade_answer(task, generated):
@@ -59,48 +196,68 @@ def grade_answer(task, generated):
             "predicted_answer": None,
             "reference_answer": None,
         }
+    truth = _number(ref.group(1))
     visible = (generated or "").rsplit("</think>", 1)[-1]
-    candidates = []
-    for pattern in (r"\\boxed\{\s*(" + NUMBER + r")\s*\}", r"####\s*(" + NUMBER + r")"):
-        candidates += [(m.start(), m.group(1)) for m in re.finditer(pattern, visible)]
+
+    def result(status, reason, predicted=None):
+        return {
+            "grade_status": status,
+            "grade_reason": reason,
+            "predicted_answer": predicted,
+            "reference_answer": str(truth),
+        }
+
+    # Explicit final-answer markers, at most one value per kind. Only the LAST \boxed counts:
+    # earlier boxes are intermediate results. "####" counts only as a line that holds just a
+    # number (a Markdown heading such as "#### 1. Step" is not an answer). An "Answer:" line
+    # counts when it holds just a number or a box; prose after it is a fallback only.
+    markers = {}
+    boxed = _boxed_contents(visible)
+    if boxed:
+        content = boxed[-1][1]
+        value = _plain_number(content, units=True)
+        if value is None:
+            # An explicit final answer that is not a number cannot equal a numeric reference:
+            # it is wrong, and the reason says which kind (words, or digits that form no number).
+            kind = (
+                "unreadable_final_answer"
+                if re.search(r"[0-9]", content)
+                else "non_numeric_final_answer"
+            )
+            return result("incorrect", kind, " ".join(content.split())[:60])
+        markers["boxed"] = value
+    hashes = re.findall(r"(?m)^[ \t]*####[ \t]*(" + NUMBER + r")[ \t]*$", visible)
+    if hashes:
+        markers["hashes"] = _number(hashes[-1])
+    prose = []
     for label in re.finditer(
         r"(?i)(?:final\s+)?answer\s*\*{0,2}\s*[:：]([^\r\n]*)", visible
     ):
         line = label.group(1)
-        numbers = list(re.finditer(NUMBER, line))
-        if numbers:
-            last = numbers[-1]
-            candidates.append((label.start(1) + last.start(), last.group(0)))
-    if not candidates:
-        return {
-            "grade_status": "ungraded",
-            "grade_reason": "no_explicit_final_answer",
-            "predicted_answer": None,
-            "reference_answer": str(_number(ref.group(1))),
-        }
-    truth = _number(ref.group(1))
-    explicit_values = {_number(candidate) for _, candidate in candidates}
-    if len(explicit_values) != 1:
-        return {
-            "grade_status": "ungraded",
-            "grade_reason": "conflicting_explicit_answers",
-            "predicted_answer": None,
-            "reference_answer": str(truth),
-        }
-    prediction = explicit_values.pop()
+        inner = _boxed_contents(line)
+        value = (
+            _plain_number(inner[-1][1], units=True) if inner else _plain_number(line)
+        )
+        if value is not None:
+            markers["label"] = value
+        else:
+            numbers = re.findall(NUMBER, line)
+            if numbers:
+                prose.append(numbers[-1])
+    if not markers and prose:
+        markers["prose"] = _number(prose[-1])
+    if not markers:
+        return result("ungraded", "no_explicit_final_answer")
+    if len({_exact(value) for value in markers.values()}) != 1:
+        return result("ungraded", "conflicting_explicit_answers")
+    prediction = next(iter(markers.values()))
     if prediction is None or truth is None:
-        return {
-            "grade_status": "ungraded",
-            "grade_reason": "invalid_number",
-            "predicted_answer": None,
-            "reference_answer": None,
-        }
-    return {
-        "grade_status": "correct" if prediction == truth else "incorrect",
-        "grade_reason": "gsm8k_numeric_exact",
-        "predicted_answer": str(prediction),
-        "reference_answer": str(truth),
-    }
+        return result("ungraded", "invalid_number")
+    return result(
+        "correct" if _exact(prediction) == _exact(truth) else "incorrect",
+        "gsm8k_numeric_exact",
+        _show(prediction),
+    )
 
 
 # context_budget is the only limit now; the other reasons occur in records made before
